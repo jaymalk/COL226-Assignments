@@ -17,27 +17,33 @@ type bigint = sign*(int list);;
 ```Ocaml
     add: bigint -> bigint -> bigint
 ```
-   - Multiplication.  
+
+    - Multiplication.  
 ```Ocaml
     mult: bigint -> bigint -> bigint
 ```
-   - Subtraction.  
+
+    - Subtraction.  
 ```Ocaml
     sub: bigint -> bigint -> bigint
 ```
-   - Quotient:   
+
+    - Quotient:   
 ```Ocaml
     div: bigint -> bigint -> bigint
 ```
-   - Remainder.  
+
+    - Remainder.  
 ```Ocaml
     rem: bigint -> bigint -> bigint
 ```
-   - Unary negation.  
+
+    - Unary negation.  
 ```Ocaml
     minus: bigint -> bigint
 ```
-   - Absolute value.  
+
+    - Absolute value.  
 ```Ocaml
     abs: bigint -> bigint
 ```
