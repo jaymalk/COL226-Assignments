@@ -14,39 +14,39 @@ type bigint = sign*(int list);;
 - Arithmetic operations:
 
     - Addition.  
-```Ocaml
+    ```Ocaml
     add: bigint -> bigint -> bigint
-```
+    ```
 
     - Multiplication.  
-```Ocaml
+    ```Ocaml
     mult: bigint -> bigint -> bigint
-```
+    ```
 
     - Subtraction.  
-```Ocaml
+    ```Ocaml
     sub: bigint -> bigint -> bigint
-```
+    ```
 
     - Quotient:   
-```Ocaml
+    ```Ocaml
     div: bigint -> bigint -> bigint
-```
+    ```
 
     - Remainder.  
-```Ocaml
+    ```Ocaml
     rem: bigint -> bigint -> bigint
-```
+    ```
 
     - Unary negation.  
-```Ocaml
+    ```Ocaml
     minus: bigint -> bigint
-```
+    ```
 
     - Absolute value.  
-```Ocaml
+    ```Ocaml
     abs: bigint -> bigint
-```
+    ```
 
 - Comparison operations:
 
