@@ -81,7 +81,7 @@ let simple_add (l1 : int list) (l2 : int list) =
   in add_till_end (List.rev l1) (List.rev l2) [];;
 
 (* Simple subtraction which subtracts and gives a bigint *)
-let simple_subtract (l1 : int list) (l2 : int list) : bigint = match (larger_list l1 l2) with
+let simple_subtract (l1 : int list) (l2 : int list) : bigint = match (larger_list l1 l2 || l1=l2) with
     true -> (NonNeg, simple_add l1 (minus_list l2))
   | false ->(Neg, simple_add l2 (minus_list l1));;
 
