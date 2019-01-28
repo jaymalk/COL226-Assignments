@@ -1,5 +1,8 @@
 
-# Ignoring all extension-less files
+# Ignoring all ocaml compilations
+*.cmi
+*.cmo
+a.out
 
 # Mac
 .DS_Store

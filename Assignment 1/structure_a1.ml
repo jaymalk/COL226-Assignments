@@ -2,7 +2,7 @@ open Structure_a0.A0
 open Signature_a1
 module A1 : CalculatorLanguage = struct
 
-type  exptree =  N of int
+type  exptree =  N of bigint
               | Plus of exptree * exptree
               | Minus of exptree * exptree
               | Mult of exptree * exptree
@@ -17,9 +17,9 @@ type opcode = CONST of bigint | PLUS | TIMES | MINUS | DIV | REM | ABS | UNARYMI
 (* Exceptions *)
 exception IllformedStack;;
 
-let eval_with_bigint e =
+let eval (e:exptree) =
   let rec calc e = match e with
-      N (x) -> mk_big x
+      N (x) -> x
     | Plus(e1, e2) -> add (calc e1) (calc e2)
     | Minus (e1, e2) -> sub (calc e1) (calc e2)
     | Mult (e1, e2) -> mult (calc e1) (calc e2)
@@ -30,22 +30,9 @@ let eval_with_bigint e =
   in calc e
 ;;
 
-let eval e =
-  let rec calc e = match e with
-      N (x) -> x
-    | Plus(e1, e2) ->  (calc e1) + (calc e2)
-    | Minus (e1, e2) ->  (calc e1) - (calc e2)
-    | Mult (e1, e2) ->  (calc e1)*(calc e2)
-    | Div (e1, e2) ->  (calc e1)/(calc e2)
-    | Rem (e1, e2) ->  (calc e1) mod (calc e2)
-    | Nega (e) -> -(calc e)
-    | Abs (e) ->  if (calc e) > 0 then (calc e) else -(calc e)
-  in calc e
-;;
-
 let compile (e : exptree) =
   let rec mk_list  e = match e with
-      N (x) -> [CONST(mk_big x)]
+      N (x) -> [CONST(x)]
     | Plus(e1, e2) -> (mk_list e1) @ (mk_list e2) @ [PLUS]
     | Minus (e1, e2) -> (mk_list e1) @ (mk_list e2) @ [MINUS]
     | Mult (e1, e2) -> (mk_list e1) @ (mk_list e2) @ [TIMES]
@@ -54,7 +41,7 @@ let compile (e : exptree) =
     | Nega (e) -> [UNARYMINUS]
     | Abs (e) -> [ABS]
   in (mk_list e)
-
+;;
 
 
   let stackmc (li : bigint list) (lo : opcode list) =
@@ -86,5 +73,6 @@ let compile (e : exptree) =
         [] -> List.hd li
       |x :: xs -> result (perform_action li x) xs
   in result li lo
+  ;;
 
 end
