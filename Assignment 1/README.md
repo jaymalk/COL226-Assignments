@@ -16,7 +16,7 @@ type  exptree = N of bigint
 
 ### Interpreter
 
-**The definitional interpreter is to be defined as the following function**
+**The definitional interpreter is defined as the following function**
 ``` ocaml
   val eval : exptree -> bigint
 ```
@@ -28,17 +28,17 @@ type  exptree = N of bigint
 type opcode = CONST of bigint | PLUS | TIMES | MINUS | DIV | REM | ABS | UNARYMINUS
 ```
 
-**The stack machine is to be defined as a tail-recursive function**
+**The stack machine is defined as a tail-recursive function**
 ```ocaml
   stackmc: (bigint list) -> (opcode list) -> bigint
 ```
 
 _The compile function is simply a postorder traversal of an abstract syntax tree of an expression_ <br>
-**The compiler is to be defined as a recursive function**
+**The compiler is defined as a recursive function**
 ``` ocaml
   compile: exptree -> (opcode list)
 ```
 ****
 ### Proof
-Also, included is the [proof](./proof.pdf) of the theorem <br>
+Also included, is the [proof](./proof.pdf) of the theorem <br>
 **Theorem** : **compiler with stackmc** *calculates a bigint whose value is the same as what* **eval** *computes.*
