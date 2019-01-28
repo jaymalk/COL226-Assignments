@@ -1,7 +1,5 @@
 
 # Ignoring all extension-less files
-/**/*
-!*.*
 
 # Mac
 .DS_Store
