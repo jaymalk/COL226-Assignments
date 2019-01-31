@@ -1,9 +1,6 @@
 (* Assignment 0 *)
 
 
-open Signature_a0
-module A0 : BigInt = struct
-
 (* ======================================== *)
 (* Declaring the types *)
 type sign = Neg | NonNeg ;;
@@ -209,4 +206,3 @@ let print_num (a : bigint) =
 let mk_big (a : int) :bigint = if a >= 0 then (NonNeg, dig_list a) else (Neg, dig_list (-a)) ;; (* Converting using dig_list *)
 
 (* ---------------------------------------- *)
-end
