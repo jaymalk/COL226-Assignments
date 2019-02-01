@@ -16,6 +16,9 @@ type opcode = CONST of bigint | PLUS | TIMES | MINUS | DIV | REM | ABS | UNARYMI
 (* Exceptions *)
 exception IllformedStack;;
 
+
+(* Definitional intepreter *)
+(* Evaluation with inbuilt ocaml features *)
 let eval (e:exptree) =
   let rec calc e = match e with
       N (x) -> x
@@ -30,6 +33,7 @@ let eval (e:exptree) =
 ;;
 
 
+(* The compile function, compiles the exptree into an opcode list. *)
 let compile (e : exptree) =
   let rec mk_list  e = match e with
       N (x) -> [CONST(mk_big x)]
@@ -38,12 +42,13 @@ let compile (e : exptree) =
     | Mult (e1, e2) -> (mk_list e1) @ (mk_list e2) @ [TIMES]
     | Div (e1, e2) -> (mk_list e1) @ (mk_list e2) @ [DIV]
     | Rem (e1, e2) -> (mk_list e1) @ (mk_list e2) @ [REM]
-    | Nega (e) -> [UNARYMINUS]
-    | Abs (e) -> [ABS]
+    | Nega (e) -> (mk_list e) @ [UNARYMINUS]
+    | Abs (e) -> (mk_list e) @ [ABS]
   in (mk_list e)
 ;;
 
 
+(* Stack machine, evaluates the opcode list and puts the result on the top of stack (as list) *)
 let stackmc (li : bigint list) (lo : opcode list) =
   let perform_action li oc = match oc with
       CONST (x)  -> x :: li
