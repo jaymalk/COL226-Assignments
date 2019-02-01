@@ -6,3 +6,7 @@ a.out
 
 # Mac
 .DS_Store
+
+# Test case files and generators
+*.txt
+*.py
