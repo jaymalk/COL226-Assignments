@@ -34,10 +34,13 @@ Thus, with this we can conclude
 \end{center}
 \phantom \\
 \subsubsection*{Inductive Hypothesis}
-Now, we assume that \( \forall \) \texttt{exptree e} with \texttt{height(e)} \(\leq k\) satisfy the above theorem, i.e. \texttt{mk\_big }(\texttt{eval(\textbf{e})}) \(=\) \texttt{stackmc li (compile \textbf{e})}, where \( k \geq 0\).
-\phantom \\[10 pt]
+Now, we assume that \( \forall \) \texttt{exptree e} with \texttt{height(e)} \(\leq k\) satisfy the above theorem, i.e. \texttt{mk\_big }(\texttt{eval(\textbf{e})}) \(=\) \texttt{stackmc li (compile \textbf{e})}, where \( k \geq 0\). \\[10 pt]
 \subsubsection*{Inductive Step}
-Now, let \texttt{e} be an \texttt{exptree} with \texttt{height} \(= k+1 \).\\[5pt]Now, since  \( k \geq 0\), \texttt{height} of \texttt{e} \( \geq 1\).\\[5pt] This ensures that \texttt{e} is of the form \texttt{(BIN of exptree*exptree)} or \texttt{(UN of exptree)}, where \texttt{BIN and UN} are binary and unary operations, respectively. \\[10 pt]
+Now, let \texttt{e} be an \texttt{exptree} with \texttt{height} \(= k+1 \).\\[5pt]Now, since  \( k \geq 0\), \texttt{height} of \texttt{e} \( \geq 1\).\\[5pt] This ensures that \texttt{e} is of the form 
+\begin{center}
+    \texttt{(BIN of exptree*exptree)}\\ or \\\texttt{(UN of exptree)}
+\end{center} 
+, where \texttt{BIN and UN} are binary and unary operations respectively. \\[10 pt]
 \textbf{Case 1 (Binary Operation)} \\ [5 pt]
     Now, \texttt{e} is of the form \texttt{BIN(el, er)}. Since, \texttt{el and er} are subtrees of \texttt{e} their \texttt{height} is going to be \( \leq k\). Thus, our induction hypothesis holds for these trees. Therefore,
     \begin{center}
@@ -71,7 +74,7 @@ Now, let \texttt{e} be an \texttt{exptree} with \texttt{height} \(= k+1 \).\\[5p
 \pagebreak
 \\
 \textbf{Case 2 (Unary Operation)} \\ [5 pt]
-With most properties same as above, by induction hypothesis,
+With most properties same as above and \texttt{e} as \texttt{UN(e')}, by induction hypothesis,
 \begin{center}
     \texttt{mk\_big eval(e')} =  \texttt{stackmc li (compile \textbf{e'})} \(=\) \texttt{mk\_big x'} (say) 
 \end{center}
@@ -109,5 +112,6 @@ We have used some properties which are cleared here
     \item \texttt{BIN (mk\_big xl) (mk\_big xr)} = \texttt{mk\_big (xl ** xr)},  from definition of \texttt{BIN} in \texttt{bigint}
 \end{itemize}
 \bibliographystyle{plain}
+
 \bibliography{references}
 \end{document}
