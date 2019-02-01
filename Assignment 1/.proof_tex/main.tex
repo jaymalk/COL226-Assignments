@@ -1,0 +1,113 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+\title{Assignment 1} 
+\author{Rajbir Malik}
+\date{2017CS10416}
+
+\begin{document}
+
+\maketitle
+\subsection*{Theorem}
+
+\begin{center}
+\(\forall\) \texttt{exptree} \textbf{e} \\ \texttt{mk\_big }(\texttt{eval(\textbf{e})}) \(=\) \texttt{stackmc li (compile \textbf{e})} \\
+\end{center}
+
+\subsection*{Proof}
+We shall be proving the theorem by applying induction on the \texttt{height} of \texttt{exptree}. \\
+\subsubsection*{Base Case}
+The base case \texttt{height} for \texttt{exptree} is 0. In this case the tree \texttt{e}, is just \texttt{N(x)} for some \texttt{int}.
+In this case,
+\begin{center}
+    \texttt{eval(e)} \(=\) \texttt{x} and,\\
+    \texttt{compile(e)} \(=\) \texttt{[CONST(mk\_big x)]} \\
+\end{center}
+    which after evaluation with stackmc would give
+\begin{center}
+    \texttt{stackmc li (compile e)} = (mk\_big x)
+\end{center}
+Thus, with this we can conclude
+\begin{center}
+    \texttt{mk\_big }(\texttt{eval(\textbf{e})}) \(=\) \texttt{stackmc li (compile \textbf{e})}
+\end{center}
+\phantom \\
+\subsubsection*{Inductive Hypothesis}
+Now, we assume that \( \forall \) \texttt{exptree e} with \texttt{height(e)} \(\leq k\) satisfy the above theorem, i.e. \texttt{mk\_big }(\texttt{eval(\textbf{e})}) \(=\) \texttt{stackmc li (compile \textbf{e})}, where \( k \geq 0\).
+\phantom \\[10 pt]
+\subsubsection*{Inductive Step}
+Now, let \texttt{e} be an \texttt{exptree} with \texttt{height} \(= k+1 \).\\[5pt]Now, since  \( k \geq 0\), \texttt{height} of \texttt{e} \( \geq 1\).\\[5pt] This ensures that \texttt{e} is of the form \texttt{(BIN of exptree*exptree)} or \texttt{(UN of exptree)}, where \texttt{BIN and UN} are binary and unary operations, respectively. \\[10 pt]
+\textbf{Case 1 (Binary Operation)} \\ [5 pt]
+    Now, \texttt{e} is of the form \texttt{BIN(el, er)}. Since, \texttt{el and er} are subtrees of \texttt{e} their \texttt{height} is going to be \( \leq k\). Thus, our induction hypothesis holds for these trees. Therefore,
+    \begin{center}
+        \texttt{mk\_big }(\texttt{eval(\textbf{er})}) \(=\) \texttt{stackmc li (compile \textbf{er})} \(=\) \texttt{mk\_big xr} (say) \\
+        \texttt{mk\_big }(\texttt{eval(\textbf{el})}) \(=\) \texttt{stackmc li (compile \textbf{el})} \(=\) \texttt{mk\_big xl} (say)
+    \end{center}
+    Also,
+    \begin{center}
+        \texttt{compile(e)} = \texttt{compile(el) $@$ compile(er) $@$ [BIN]}   
+    \end{center}
+    Now, for \texttt{LHS}, 
+    \begin{center}
+        \texttt{eval(e)} = \texttt{eval(el) ** eval(er)}, and so \\
+        \texttt{eval(e)} = \texttt{xl ** xr}                            
+    \end{center}
+    where ** is the syntactic representation of \texttt{BIN}. \\[5pt]
+    Now, for \texttt{RHS} 
+    \begin{center}
+        {\small \texttt{stackmc l1 (compile e)} = \texttt{stackmc l1 (compile el)$@$(compile er)$@$[BIN]}}
+    \end{center}
+    And, by the definition of stackmc, since \texttt{compile el} represents a complete tree, its values \texttt{mk\_big xl} will be prepended to stack. The same goes for \texttt{compile er}. And, therefore,
+    \begin{center}
+        {\small \texttt{stackmc l1 (compile e)} = \texttt{stackmc ((mk\_big xr)::(mk\_big xl)::l1) [BIN]}}
+    \end{center}
+    Now, following the definition of \texttt{stackmc}, the above expression evaluates to,
+    \begin{center}
+        {\texttt{stackmc l1 (compile e)} = \texttt{BIN (mk\_big xl) (mk\_big xr)}}, {\tiny which is same as} \\[5pt]
+        {\small \texttt{BIN (mk\_big xl) (mk\_big xr)} = \texttt{mk\_big (xl ** xr)} = \texttt{mk\_big (eval(e)}}
+    \end{center}
+    and, hence induction holds. \\
+\pagebreak
+\\
+\textbf{Case 2 (Unary Operation)} \\ [5 pt]
+With most properties same as above, by induction hypothesis,
+\begin{center}
+    \texttt{mk\_big eval(e')} =  \texttt{stackmc li (compile \textbf{e'})} \(=\) \texttt{mk\_big x'} (say) 
+\end{center}
+Also,
+    \begin{center}
+        \texttt{compile(e)} = \texttt{compile(e') $@$ [UN]}
+    \end{center}
+    Now, for \texttt{LHS}, 
+    \begin{center}
+        \texttt{eval(e)} = \texttt{ \#eval(e')},\\
+        \texttt{eval(e)} = \texttt{ \#x}                               
+    \end{center}
+    where \# is the syntactic representation of \texttt{UN}. \\[5pt]
+    Now, for \texttt{RHS} 
+    \begin{center}
+        {\small \texttt{stackmc l1 (compile e)} = \texttt{stackmc l1 (compile e')$@$[BIN]}}
+    \end{center}
+    And, by the definition of stackmc, since \texttt{compile e'} represents a complete tree, its values \texttt{mk\_big x'} will be prepended to stack. And, therefore,
+    \begin{center}
+        {\small \texttt{stackmc l1 (compile e)} = \texttt{stackmc ((mk\_big x')::l1) [BIN]}}
+    \end{center}
+    Now, following the definition of \texttt{stackmc}, the above expression evaluates to,
+    \begin{center}
+        {\texttt{stackmc l1 (compile e)} = \texttt{UN (mk\_big x')}}, {\tiny which is same as} \\[5pt]
+        {\small \texttt{UN (mk\_big x')} = \texttt{mk\_big (\#xr)} = \texttt{mk\_big (eval(e)}}
+    \end{center}
+    and, hence induction holds. \\
+
+{\large Thus, induction holds, and thus the theorem is correct.}
+
+\subsubsection*{Note}
+We have used some properties which are cleared here
+\begin{itemize}
+    \item \texttt{UN (mk\_big x')} = \texttt{mk\_big (\#xr)}, from definition of \texttt{UN} in \texttt{bigint}
+    \item \texttt{BIN (mk\_big xl) (mk\_big xr)} = \texttt{mk\_big (xl ** xr)},  from definition of \texttt{BIN} in \texttt{bigint}
+\end{itemize}
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}
