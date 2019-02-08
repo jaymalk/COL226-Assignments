@@ -13,6 +13,6 @@ Assignments completed while pursuing the course programming languages.
     - Model the "abstract syntax" of a simple calculator language for big_integer expressions, and give it "semantic meaning", and give it "semantic meaning"
     - Implement the calculator as a simple stack-based machine, using opcodes into which the abstract syntax of an expression is compiled.
 2. _Building a_ ***scanner*** _using OCaml-Lex_ <br>
-    [More](./Assignments%202/README.md)
+    [More](./Assignment%202/README.md)
     - Specify the tokens for a simple arithmetic and boolean calculation language.
     - Generate a scanner for the defined tokens.
