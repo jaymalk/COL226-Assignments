@@ -23,8 +23,8 @@
 - _Unary boolean operation_:
     - **not**
 - _Binary boolean operations_:  
-    - **/\**  `and`
-    - **\/**  `or`
+    - **\/\\**  `and`
+    - **\\/**  `or`
 - _Comparison operators_:
     - **=**  `equal`
     - **>**  `greater than`
