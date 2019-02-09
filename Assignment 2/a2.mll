@@ -2,17 +2,17 @@
     type token =
     | INT of int
     | ABS | NOT | DEF
-    | ADD | MINUS | MULT | DIV | MOD | EXP
-    | LBRC | RBRC
+    | ADD | MINUS | MUL | DIV | MOD | EXP
+    | LP | RP
     | TRUE | FALSE
     | AND | OR
-    | CMP of string
+    | EQ | GTA | LTA | GEQ | LEQ
     | IF | THEN | ELSE
     | ID of string
-    | EOC
-    | NOT_IN_LANG;;
+    | DELIMITER ;;
 
-    exception UNRECOGNISED of char;;
+    exception UNRECOGNISED of char ;;
+    exception NOT_ALLOWED of string ;;
 }
 
 (* PREDEFINED REGEX *)
@@ -36,17 +36,21 @@ let small = ['a'-'z']
 let caps = ['A'-'Z']           (* ID STRING *)
 let id = small (small|caps)*
 
+let caps_words = (caps)(small|caps)*
+
 
 (* READ FUNCTION PARSER *)
 
 rule read = parse
        | sp {read lexbuf}
 
+       | caps_words as l {raise (NOT_ALLOWED(l))}
+
        | 'T' {TRUE :: (read lexbuf)} | 'F' {FALSE :: (read lexbuf)}     (* TRUE AND FALSE BOOLEAN *)
 
        | integer as i {INT(int_of_string i) :: (read lexbuf)}           (* INTEGER TYPE *)
 
-       | '(' {LBRC :: (read lexbuf)} | ')' {RBRC :: (read lexbuf)}     (* PARENTHESIS *)
+       | '(' {LP :: (read lexbuf)} | ')' {RP :: (read lexbuf)}     (* PARENTHESIS *)
 
        | binops as b {(read_binops (Lexing.from_string b)) :: (read lexbuf)}    (* BINARY ARITHMETIC OPERATIONS *)
 
@@ -56,11 +60,11 @@ rule read = parse
 
        | "\\/" {OR :: (read lexbuf)} | "/\\" {AND :: (read lexbuf)}     (* AND-OR BINARY BOOLEAN OPERATIONS *)
 
-       | ';' {EOC :: (read lexbuf)}              (* END OF COMMAND *)
+       | ';' {DELIMITER :: (read lexbuf)}              (* END OF COMMAND *)
 
        | cond as c {read_cond(Lexing.from_string c) :: (read lexbuf)}           (* IF THEN ELSE STATEMENTS *)
 
-       | cmp as cp {CMP(cp) :: (read lexbuf)}           (* COMPARISON OPERATIONS *)
+       | cmp as cp {read_cmp(Lexing.from_string cp) :: (read lexbuf)}           (* COMPARISON OPERATIONS *)
 
        | id as d {ID(d) :: (read lexbuf)}               (* ID STRINGS *)
 
@@ -71,7 +75,7 @@ rule read = parse
 and read_binops = parse
                 | '+' {ADD}
                 | '-' {MINUS}             (* SIDE FUNCTION FOR CLASSIFYING BINARY ARITHMETIC OPERATIONS *)
-                | '*' {MULT}
+                | '*' {MUL}
                 | "div" {DIV}
                 | "mod" {MOD}
                 | '^' {EXP}
@@ -81,7 +85,14 @@ and read_cond = parse
                 | "else" {ELSE}        (* SIDE FUNCTION FOR CLASSIFYING CONDITIONALS *)
                 | "then" {THEN}
 
+and read_cmp = parse
+                | "=" {EQ}
+                | ">" {GTA}
+                | "<" {LTA}             (* SIDE FUNCTION FOR CLASSIFYING COMPARISON OPERATIONS *)
+                | ">=" {GEQ}
+                | "<=" {LEQ}
+
 
 {
-    let lex s = read (Lexing.from_string s)         (* LEXER FUNCTION *)
+    let scanner s = read (Lexing.from_string s)         (* LEXER FUNCTION *)
 }
