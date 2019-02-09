@@ -2,12 +2,12 @@
     type token =
     | INT of int
     | ABS | NOT | DEF
-    | ADD | SUB | MULT | DIV | MOD | EXP
-    | LEFTBRAC | RIGHTBRAC
+    | ADD | MINUS | MULT | DIV | MOD | EXP
+    | LBRC | RBRC
     | TRUE | FALSE
     | AND | OR
     | CMP of string
-    | IFTE of string
+    | IF | THEN | ELSE
     | ID of string
     | EOC
     | NOT_IN_LANG;;
@@ -20,7 +20,7 @@
 let sp = [' ' '\t']+        (* SPACE *)
 
 let digit = ['0'-'9']               (* INTEGERS *)
-let integer = ['1'-'9']digit*
+let integer = ('-'|'+')?['1'-'9']digit*
 
 let cond = ("if"|"else"|"then")         (* IF THEN ELSE *)
 
@@ -46,7 +46,7 @@ rule read = parse
 
        | integer as i {INT(int_of_string i) :: (read lexbuf)}           (* INTEGER TYPE *)
 
-       | '(' {LEFTBRAC :: (read lexbuf)} | ')' {RIGHTBRAC :: (read lexbuf)}     (* PARENTHESIS *)
+       | '(' {LBRC :: (read lexbuf)} | ')' {RBRC :: (read lexbuf)}     (* PARENTHESIS *)
 
        | binops as b {(read_binops (Lexing.from_string b)) :: (read lexbuf)}    (* BINARY ARITHMETIC OPERATIONS *)
 
@@ -58,7 +58,7 @@ rule read = parse
 
        | ';' {EOC :: (read lexbuf)}              (* END OF COMMAND *)
 
-       | cond as c {IFTE(c) :: (read lexbuf)}           (* IF THEN ELSE STATEMENTS *)
+       | cond as c {read_cond(Lexing.from_string c) :: (read lexbuf)}           (* IF THEN ELSE STATEMENTS *)
 
        | cmp as cp {CMP(cp) :: (read lexbuf)}           (* COMPARISON OPERATIONS *)
 
@@ -70,11 +70,16 @@ rule read = parse
 
 and read_binops = parse
                 | '+' {ADD}
-                | '-' {SUB}             (* SIDE FUNCTION FOR CLASSIFYING BINARY ARITHMETIC OPERATIONS *)
+                | '-' {MINUS}             (* SIDE FUNCTION FOR CLASSIFYING BINARY ARITHMETIC OPERATIONS *)
                 | '*' {MULT}
                 | "div" {DIV}
                 | "mod" {MOD}
                 | '^' {EXP}
+
+and read_cond = parse
+                | "if" {IF}
+                | "else" {ELSE}        (* SIDE FUNCTION FOR CLASSIFYING CONDITIONALS *)
+                | "then" {THEN}
 
 
 {
