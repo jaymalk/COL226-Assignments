@@ -16,3 +16,7 @@ Assignments completed while pursuing the course programming languages.
     [More](./Assignment%202/README.md)
     - Specify the tokens for a simple arithmetic and boolean calculation language.
     - Generate a scanner for the defined tokens.
+3. _Parsing for a simple expression evaluator_ <br>
+    [More](./Assignment%203/README.md)
+    - Design a grammar for a simple expression language, taking care to enforce precedence rules (e.g., BODMAS).
+    - Generate an abstract syntax tree from the parsed data. Then, use it for further evaluation.
