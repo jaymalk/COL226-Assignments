@@ -17,14 +17,14 @@
 (* PREDEFINED REGEX *)
 
 (* WHITE SPACE *)
-let sp = [' ' '\t']+
+let sp = [' ' '\t' '\n']+
 
 (* INTEGERS *)
 let digit = ['0'-'9']
 let integer = ('-'|'+')?(['1'-'9']digit* | '0')
 
 (* ID STRING *)
-let id = ['a' - 'z'](['a'-'z' 'A'-'Z']|digit)*
+let id = ['a' - 'z'](['a'-'z' 'A'-'Z' '0'-'9'])*
 
 
 (* READ FUNCTION PARSER *)
@@ -34,7 +34,7 @@ rule read = parse
 
        | 'T' {TRUE :: (read lexbuf)} | 'F' {FALSE :: (read lexbuf)  (* TRUE AND FALSE BOOLEAN *)}
 
-       | integer as i {INT(int_of_string i) :: (read lexbuf) (* INTEGER TYPE *)}
+       | integer as i {match i.[0] with '+' -> (INT(int_of_string (String.sub i 1 (String.length i - 1))) :: (read lexbuf))| _ -> (INT(int_of_string i) :: (read lexbuf)) (* INTEGER TYPE *)}
 
        | '(' {LP :: (read lexbuf)} | ')' {RP :: (read lexbuf) (* PARENTHESIS *)}
 

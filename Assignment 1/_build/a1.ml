@@ -49,7 +49,7 @@ let compile (e : exptree) =
 
 
 (* Stack machine, evaluates the opcode list and puts the result on the top of stack (as list) *)
-let stackmc (li : bigint list) (lo : opcode list) =
+let rec stackmc (li : bigint list) (lo : opcode list) =
   let perform_action li oc = match oc with
       CONST (x)  -> x :: li
     | PLUS  -> (match li with
