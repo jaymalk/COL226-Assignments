@@ -7,6 +7,7 @@
 
 %{
     open A1
+    exception Bad_State
 %}
 
 /* DEFINING TOKENS. To be used in lexer */
@@ -61,7 +62,7 @@ tuple:
 
 tuple_list:
     main         {Tuple(1, [$1])}
-    | main COMMA tuple_list {match $3 with Tuple(x, el) -> Tuple(x+1, $1::el) | _ -> raise A1.Bad_State}
+    | main COMMA tuple_list {match $3 with Tuple(x, el) -> Tuple(x+1, $1::el) | _ -> raise Bad_State}
 
 /* PROJECTIONS */
 projections:
@@ -100,7 +101,7 @@ rem_expression:
 basic_int:
     INT                                       {N($1)}
     | ID                                      {Var($1)}
-    | LP arithmetic_expression RP             {InParen($2)}
+    /* | LP arithmetic_expression RP             {InParen($2)} */
 
 /* BOOLEAN AND COMPARISON LAYER (FOLLOWING THIS PRECEDNCE ORDER -> NOT > AND > OR) */
 boolean_expression:
@@ -130,4 +131,4 @@ not_expression:
 
 basic_bool:
     BOOL                                      { B($1) }
-    | LP boolean_expression RP                {InParen($2)}
+    /* | LP boolean_expression RP                {InParen($2)} */

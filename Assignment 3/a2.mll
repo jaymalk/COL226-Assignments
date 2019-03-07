@@ -17,8 +17,8 @@ let sp = [' ' '\t' '\n']+
 
 
 (* Rule for parsing the tokens *)
-rule token = parse
-    sp                  { token lexbuf  (* Ignoring white space. *)}
+rule read = parse
+    sp                  { read lexbuf  (* Ignoring white space. *)}
 
 |   '('                 { LP        (* Left Parathesis *)}
 |   ')'                 { RP        (* Right Parathesis *)}
