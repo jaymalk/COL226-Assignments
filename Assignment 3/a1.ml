@@ -6,6 +6,7 @@ exception Not_implemented
 exception Bad_State (* To be raised when an undesired state has been reached *)
 exception Confusing (* To be raised to keep ambiguous situations in check *)
 exception IllformedStack (* To be raised when the opcodes leads to invalid opreations including stack *)
+exception TupleSizeMismatch (* To be raised when the size of projection and tuple doesnt match *)
 
 (* abstract syntax *)
 type  exptree =  Done (* End of input *)
@@ -79,9 +80,9 @@ let eval (ex : exptree) =
 (* Creating N-Tuple *)
     | Tuple(n, el) -> Tup(n, List.map calc el)
 (* Projecting a component of the tuple *)
-    | Project((i, n), e) -> (match e with | Tuple(n, el) -> (calc (List.nth el i)) | _ -> raise Bad_State)
+    | Project((i, n), e) -> (match e with | Tuple(m, el) -> if not (m == n) then (raise TupleSizeMismatch) else (calc (List.nth el (i-1))) | _ -> raise Bad_State)
 (* All possible steps covered above, stage below should not be reached *)
-    | _ -> (raise Bad_State)
+    (* | _ -> (raise Bad_State) *)
   in calc ex
 ;;
 
@@ -123,14 +124,14 @@ let compile (ex : exptree) =
 (* Conditional *)
     | IfThenElse(e1, e2, e3) -> (mk_list e1) @ (mk_list e2) @ (mk_list e3) @ [IFTE]
 (* Handling N-Tuple *)
-    | Tuple(n, el) -> (let rec opcode_list_from_tuple el l = match el with
-          [] -> l @ [TUPLE(n)]
-        | x :: xs -> opcode_list_from_tuple xs l @ (mk_list x)
-       in opcode_list_from_tuple el [])
+    | Tuple(n, el) -> (let rec opcode_list_from_tuple eli l m = match eli with
+          [] -> l@[TUPLE(m)]
+        | x :: xs -> opcode_list_from_tuple xs (l@(mk_list x)) m
+       in opcode_list_from_tuple el [] n)
 (* Projecting a component of the tuple *)
     | Project((i, n), e) -> (mk_list e) @ [PROJ(i, n)]
 (* All possible steps covered above, stage below should not be reached *)
-    | _ -> raise Bad_State
+    (* | _ -> raise Bad_State *)
   in (mk_list ex)
 
 let stackmc (stk : answer list) (pgm : opcode list) =
@@ -190,14 +191,20 @@ let stackmc (stk : answer list) (pgm : opcode list) =
         | _ -> raise IllformedStack
       )
 (* N-Tuple related *)
-    | TUPLE(n) -> raise Confusing (* TO BE COMPLETED LATER *)
+    | TUPLE(n) -> (let rec take_out_and_put_back l1 l2 n_org m =
+                     match m with
+                       0 -> (Tup(n_org, l1)::l2)
+                     | m -> (match l2 with
+                           x :: xs -> (take_out_and_put_back (x::l1) xs n_org (m-1))
+                         | _ -> raise Bad_State)
+                   in take_out_and_put_back [] li n n)
 (* Projection related *)
     | PROJ(i, n) -> (match li with
-          Tup(n, el) :: xs -> (List.nth el i) :: xs
+          Tup(m, el) :: xs ->  if not (m==n) then raise TupleSizeMismatch else (List.nth el (i-1)) :: xs
         | _ -> raise IllformedStack
       )
 (* All possible steps covered above, stage below should not be reached *)
-    | _ -> raise Bad_State
+    (* | _ -> raise Bad_State *)
   in
   (* Main handle function *)
   let rec result li lo = match lo with
