@@ -1,0 +1,11 @@
+
+#directory "_build";;
+#load "a0.cmo";;
+#load "a1.cmo";;
+#load "a2.cmo";;
+#load "a3.cmo";;
+
+open A0;;
+open A1;;
+open A2;;
+open A3;;
