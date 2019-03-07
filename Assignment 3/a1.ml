@@ -186,7 +186,7 @@ let stackmc (stk : answer list) (pgm : opcode list) =
     | PAREN -> li (* Tentatively, no change required after parenthesis (a redundant opcode) *)
 (* Conditional *)
     | IFTE -> (match li with
-          Num(x1) :: Num(x2) :: Bool(b) :: xs -> if b then Num(x2) :: xs else Num(x1) :: xs
+          a1 :: a2 :: Bool(b) :: xs -> if b then a2 :: xs else a1 :: xs
         | _ -> raise IllformedStack
       )
 (* N-Tuple related *)

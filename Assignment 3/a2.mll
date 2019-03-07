@@ -8,6 +8,7 @@
 {
   open A3
   exception Not_implemented
+  exception Bad_State
 }
 
 let id = ['A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
@@ -62,3 +63,5 @@ rule token = parse
 |   ['0'-'9']+ as n     { INT(int_of_string n)   (* Integer constants *)}
 
 |   eof                 { EOF          (* End of file marker *)}
+
+|   _                   { raise Bad_State}
