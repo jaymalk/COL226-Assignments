@@ -100,10 +100,10 @@ let compile (ex : exptree) =
     | Var(x) -> [VAR(x)]
     | B(b) -> [BCONST(b)]
 (* Unary operations : Integers *)
-    | Abs(x) ->      (mk_list e) @ [ABS]
-    | Negative(x) -> (mk_list e) @ [UNARYMINUS]
+    | Abs(x) ->      (mk_list x) @ [ABS]
+    | Negative(x) -> (mk_list x) @ [UNARYMINUS]
 (* Unary operations : Bool *)
-    | Not(e) ->      (mk_list e) @ [NOT]
+    | Not(e1) ->      (mk_list e1) @ [NOT]
 (* Binary operations : Integers *)
     | Add(e1, e2) ->   (mk_list e1) @ (mk_list e2) @ [PLUS]
     | Sub (e1, e2) ->  (mk_list e1) @ (mk_list e2) @ [MINUS]
