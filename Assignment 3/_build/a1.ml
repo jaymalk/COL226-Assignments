@@ -45,12 +45,12 @@ type  exptree =  Done (* End of input *)
 (* The language should contain the following types of expressions:  integers and booleans *)
 type answer = Num of bigint | Bool of bool | Tup of int * (answer list)
 
-let eval (ex : exptree) =
+let eval (ex : exptree) (rho : string -> answer) =
   let rec calc e = match e with
 (* End of input *)
       Done -> raise Confusing
 (* Basics *)
-    | Var(st) -> raise Confusing
+    | Var(st) -> (rho st)
     | N(x) -> Num(mk_big x)
     | B(b) -> Bool(b)
 (* Unary operations : Integers *)
@@ -87,7 +87,7 @@ let eval (ex : exptree) =
 ;;
 
 (* opcodes of the stack machine (in the same sequence as above) *)
-type opcode = NCONST of bigint | BCONST of bool | ABS | UNARYMINUS | NOT
+type opcode = VAR of string | NCONST of bigint | BCONST of bool | ABS | UNARYMINUS | NOT
             | PLUS | MINUS | MULT | DIV | REM | CONJ | DISJ | EQS | GTE | LTE | GT | LT
             | PAREN | IFTE | TUPLE of int | PROJ of int*int
 
@@ -97,7 +97,7 @@ let compile (ex : exptree) =
       Done -> raise Bad_State
 (* Basics *)
     | N(x) -> [NCONST(mk_big x)]
-    | Var(x) -> raise Confusing
+    | Var(x) -> [VAR(x)]
     | B(b) -> [BCONST(b)]
 (* Unary operations : Integers *)
     | Abs(x) ->      (mk_list e) @ [ABS]
@@ -134,11 +134,12 @@ let compile (ex : exptree) =
     (* | _ -> raise Bad_State *)
   in (mk_list ex)
 
-let stackmc (stk : answer list) (pgm : opcode list) =
+let stackmc (stk : answer list) (rho : string -> answer) (pgm : opcode list) =
 (* Helper functions for processing each item in opcode list *)
   let perform_action li oc = match oc with
       NCONST(x) -> Num(x) :: li
     | BCONST(b) -> Bool(b) :: li
+    | VAR(st)   -> (rho st) :: li
 (* Unary operations : Integers *)
     | ABS ->        (match List.hd li with Num(bn) -> Num(abs bn)::(List.tl li) | _ -> raise IllformedStack)
     | UNARYMINUS -> (match List.hd li with Num(bn) -> Num(minus bn)::(List.tl li) | _ -> raise IllformedStack)

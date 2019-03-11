@@ -101,7 +101,7 @@ rem_expression:
 basic_int:
     INT                                       {N($1)}
     | ID                                      {Var($1)}
-    /* | LP arithmetic_expression RP             {InParen($2)} */
+    | LP arithmetic_expression RP             {InParen($2)}
 
 /* BOOLEAN AND COMPARISON LAYER (FOLLOWING THIS PRECEDNCE ORDER -> NOT > AND > OR) */
 boolean_expression:
@@ -131,4 +131,4 @@ not_expression:
 
 basic_bool:
     BOOL                                      { B($1) }
-    /* | LP boolean_expression RP                {InParen($2)} */
+    | LP boolean_expression RP                {InParen($2)}
