@@ -46,13 +46,14 @@
 
 main:
       EOF                         {Done}
+      /* Main */
       | premain                   { $1 }
-      | tuple                       { $1 }
-      | projections                 { $1 }
+      /* Tuple related */
+      | tuple                     { $1 }
+      | projections               { $1 }
 
 premain:
-    | arithmetic_expression       { $1 }
-    | boolean_expression          { $1 }
+    | expression                  { $1 }
     | conditional                 { $1 }
 
 /* TUPLE EXPRESSIONS */
@@ -61,8 +62,8 @@ tuple:
     | LP tuple_list RP            { $2 }
 
 tuple_list:
-    main         {Tuple(1, [$1])}
-    | main COMMA tuple_list {match $3 with Tuple(x, el) -> Tuple(x+1, $1::el) | _ -> raise Bad_State}
+    main                          {Tuple(1, [$1])}
+    | main COMMA tuple_list       {match $3 with Tuple(x, el) -> Tuple(x+1, $1::el) | _ -> raise Bad_State}
 
 /* PROJECTIONS */
 projections:
@@ -70,20 +71,46 @@ projections:
 
 /* CONDITIONAL LAYER */
 conditional:
-    IF boolean_expression THEN premain ELSE premain FI    {IfThenElse($2, $4, $6)}
+    IF expression THEN premain ELSE premain FI    {IfThenElse($2, $4, $6)}
 
-/* ARITHMETIC LAYER (FOLLOWING BODMAS) */
+/* MAIN EXPRESSIONS (BOOL AND ARITHMETIC) */
+expression:
+    or_expression                             { $1 }
+    | comparison                              { $1 }
+
+/* COMPARISON */
+comparison:
+    arithmetic_expression EQ arithmetic_expression        {Equals($1, $3)}
+    | arithmetic_expression GT arithmetic_expression      {GreaterT($1, $3)}
+    | arithmetic_expression LT arithmetic_expression      {LessT($1, $3)}
+    | arithmetic_expression GT EQ arithmetic_expression   {GreaterTE($1, $4)}
+    | arithmetic_expression LT EQ arithmetic_expression   {LessTE($1, $4)}
+
+/* Boolean layer taking arithmetic as a basic unit */
+or_expression:
+    and_expression DISJ or_expression         {Disjunction($1, $3)}
+    | and_expression                          { $1 }
+
+and_expression:
+    not_expression CONJ and_expression        {Conjunction($1, $3)}
+    | not_expression                          { $1 }
+
+not_expression:
+    NOT arithmetic_expression                 {Not($2)}
+    | arithmetic_expression                   { $1 }
+
+/* Arithmetic expressions (and operations) end here */
 arithmetic_expression:
-    add_expression                { $1 }
-    | ABS add_expression          {Abs($2)}
-    | TILDA add_expression        {Negative($2)}
-
-add_expression:
-    sub_expression PLUS add_expression        {Add($1, $3)}
-    | sub_expression                          { $1 }
+    sub_expression                            { $1 }
+    | ABS sub_expression                      {Abs($2)}
+    | TILDA sub_expression                    {Negative($2)}
 
 sub_expression:
-    mult_expression MINUS sub_expression      {Sub($1, $3)}
+    add_expression MINUS sub_expression       {Sub($1, $3)}
+    | add_expression                          { $1 }
+
+add_expression:
+    mult_expression PLUS add_expression       {Add($1, $3)}
     | mult_expression                         { $1 }
 
 mult_expression:
@@ -95,40 +122,16 @@ div_expression:
     | rem_expression                          { $1 }
 
 rem_expression:
-    basic_int REM rem_expression              {Rem($1, $3)}
-    | basic_int                               { $1 }
+    basic_unit REM rem_expression             {Rem($1, $3)}
+    | basic_unit                              { $1 }
 
-basic_int:
+/* Basic unit of both bool and integers */
+basic_unit:
+    /* For integers */
     INT                                       {N($1)}
+    /* For bools */
+    | BOOL                                    {B($1)}
+    /* For identity markers */
     | ID                                      {Var($1)}
-    | LP arithmetic_expression RP             {InParen($2)}
-
-/* BOOLEAN AND COMPARISON LAYER (FOLLOWING THIS PRECEDNCE ORDER -> NOT > AND > OR) */
-boolean_expression:
-    or_expression                             { $1 }
-    | comparison                              { $1 }
-
-/* COMPARISON */
-comparison:
-    arithmetic_expression EQ arithmetic_expression      {Equals($1, $3)}
-    | arithmetic_expression GT arithmetic_expression   {GreaterT($1, $3)}
-    | arithmetic_expression LT arithmetic_expression   {LessT($1, $3)}
-    | arithmetic_expression GT EQ arithmetic_expression   {GreaterTE($1, $4)}
-    | arithmetic_expression LT EQ arithmetic_expression   {LessTE($1, $4)}
-
-/* BOOLEAN */
-or_expression:
-    and_expression DISJ or_expression         {Disjunction($1, $3)}
-    | and_expression                          { $1 }
-
-and_expression:
-    not_expression CONJ and_expression        {Conjunction($1, $3)}
-    | not_expression                          { $1 }
-
-not_expression:
-    NOT basic_bool                            {Not($2)}
-    | basic_bool                              { $1 }
-
-basic_bool:
-    BOOL                                      { B($1) }
-    | LP boolean_expression RP                {InParen($2)}
+    /* For bracketed expressions */
+    | LP expression RP                        {InParen($2)}
