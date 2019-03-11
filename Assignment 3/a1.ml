@@ -76,11 +76,11 @@ let eval (ex : exptree) (rho : string -> answer) =
 (* Parenthesis *)
     | InParen(e) -> (calc e)
 (* Conditional *)
-    | IfThenElse(e1, e2, e3) -> (match (calc e1) with |Bool(b) -> (if b then (calc e1) else (calc e3)) | _ -> raise Bad_State)
+    | IfThenElse(e1, e2, e3) -> (match (calc e1) with |Bool(b) -> (if b then (calc e2) else (calc e3)) | _ -> raise Bad_State)
 (* Creating N-Tuple *)
     | Tuple(n, el) -> Tup(n, List.map calc el)
 (* Projecting a component of the tuple *)
-    | Project((i, n), e) -> (match e with | Tuple(m, el) -> if not (m == n) then (raise TupleSizeMismatch) else (calc (List.nth el (i-1))) | _ -> raise Bad_State)
+    | Project((i, n), e) -> (match (calc e) with | Tup(m, al) -> if not (m == n) then (raise TupleSizeMismatch) else ((List.nth al (i-1))) | _ -> raise Bad_State)
 (* All possible steps covered above, stage below should not be reached *)
     (* | _ -> (raise Bad_State) *)
   in calc ex

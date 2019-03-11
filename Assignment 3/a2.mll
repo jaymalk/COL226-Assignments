@@ -53,10 +53,8 @@ rule read = parse
 |   "fi"                { FI }
 
 |   "="                 { EQ }
-|   ">"                 { GTA }
-|   "<"                 { LTA       (* Comparison Keywords *)}
-|   ">="                { GEQ }
-|   "<="                { LEQ }
+|   ">"                 { GT        (* Comparison Keywords *)}
+|   "<"                 { LT }
 
 |   'T'                 { BOOL(true) }
 |   'F'                 { BOOL(false)  (* Boolean constants *)}

@@ -22,7 +22,7 @@
 /* Boolean operations */
 %token  NOT CONJ DISJ
 /* Comparison operations */
-%token  EQ GTA LTA GEQ LEQ
+%token  EQ GT LT
 /* Boolean Constants */
 %token  <bool> BOOL
 /* Integer constants */
@@ -66,7 +66,7 @@ tuple_list:
 
 /* PROJECTIONS */
 projections:
-    PROJ LP INT COMMA INT RP tuple {Project(($3, $5), $7)}
+    PROJ LP INT COMMA INT RP main {Project(($3, $5), $7)}
 
 /* CONDITIONAL LAYER */
 conditional:
@@ -111,10 +111,10 @@ boolean_expression:
 /* COMPARISON */
 comparison:
     arithmetic_expression EQ arithmetic_expression      {Equals($1, $3)}
-    | arithmetic_expression GTA arithmetic_expression   {GreaterT($1, $3)}
-    | arithmetic_expression LTA arithmetic_expression   {LessT($1, $3)}
-    | arithmetic_expression GEQ arithmetic_expression   {GreaterTE($1, $3)}
-    | arithmetic_expression LEQ arithmetic_expression   {LessTE($1, $3)}
+    | arithmetic_expression GT arithmetic_expression   {GreaterT($1, $3)}
+    | arithmetic_expression LT arithmetic_expression   {LessT($1, $3)}
+    | arithmetic_expression GT EQ arithmetic_expression   {GreaterTE($1, $4)}
+    | arithmetic_expression LT EQ arithmetic_expression   {LessTE($1, $4)}
 
 /* BOOLEAN */
 or_expression:

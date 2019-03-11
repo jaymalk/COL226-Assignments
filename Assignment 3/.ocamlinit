@@ -9,3 +9,22 @@ open A0;;
 open A1;;
 open A2;;
 open A3;;
+
+(* Parser accepts the expression as string and binding as hash map with variable to values (integer, boolean, tuple) *)
+let parser s binding =
+  let result = A3.main A2.read (Lexing.from_string s) in
+    (* Return the three versions as abstract syntax tree, value, compiled opcode*)
+    (result, (A1.eval result binding), (A1.stackmc [] binding (A1.compile result)))
+;;
+
+exception NotPresent
+
+(* Input is given as string *)
+let rho s = match s with 
+   "X" -> Num (A0.mk_big 5)
+|  "Y" -> Bool true
+|  "Z" -> Tup (3, [Num (A0.mk_big 5); Bool true; Num (A0.mk_big 1)])
+| _ -> raise NotPresent
+
+let check s = (parser s rho);;
+
