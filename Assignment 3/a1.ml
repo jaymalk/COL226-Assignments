@@ -117,8 +117,8 @@ let compile (ex : exptree) =
     | Equals(e1, e2) ->    (mk_list e1) @ (mk_list e2) @ [EQS]
     | GreaterTE(e1, e2) -> (mk_list e1) @ (mk_list e2) @ [GTE]
     | LessTE(e1, e2) ->    (mk_list e1) @ (mk_list e2) @ [LTE]
-    | GreaterT(e1, e2) ->  (mk_list e1) @ (mk_list e2) @ [LT]
-    | LessT(e1, e2) ->     (mk_list e1) @ (mk_list e2) @ [GT]
+    | GreaterT(e1, e2) ->  (mk_list e1) @ (mk_list e2) @ [GT]
+    | LessT(e1, e2) ->     (mk_list e1) @ (mk_list e2) @ [LT]
 (* Parenthesis *)
     | InParen(e) -> (mk_list e) @ [PAREN]
 (* Conditional *)
