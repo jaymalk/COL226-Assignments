@@ -9,7 +9,7 @@ exception IllformedStack (* To be raised when the opcodes leads to invalid oprea
 exception TupleSizeMismatch (* To be raised when the size of projection and tuple doesnt match *)
 
 (* abstract syntax *)
-type  exptree =  Done (* End of input *)
+type  exptree =
               | Var of string (* variables starting with a Capital letter, represented as alphanumeric strings with underscores (_) and apostrophes (') *)
               | N of int      (* Integer constant *)
               | B of bool     (* Boolean constant *)
@@ -43,58 +43,60 @@ type  exptree =  Done (* End of input *)
               | Project of (int*int) * exptree   (* Proj((i,n), e)  0 < i <= n *)
 
 (* The language should contain the following types of expressions:  integers and booleans *)
-type answer = Num of bigint | Bool of bool | Tup of int * (answer list)
 
-let eval (ex : exptree) (rho : string -> answer) =
+(* The type of value returned by the definitional interpreter. *)
+type value = NumVal of int | BoolVal of bool | TupVal of int * (value list)
+
+(* DEFINITIONAL INTERPRETER *)
+let eval (ex : exptree) (rho : string -> value) =
   let rec calc e = match e with
-(* End of input *)
-      Done -> raise Confusing
 (* Basics *)
     | Var(st) -> (rho st)
-    | N(x) -> Num(mk_big x)
-    | B(b) -> Bool(b)
+    | N(x) -> NumVal(x)
+    | B(b) -> BoolVal(b)
 (* Unary operations : Integers *)
-    | Abs(e) ->      (match (calc e) with | Num(bn) -> Num(abs bn)   | _ -> raise Bad_State)
-    | Negative(e) -> (match (calc e) with | Num(bn) -> Num(minus bn) | _ -> raise Bad_State)
+    | Abs(e) ->      (match (calc e) with | NumVal(bn) -> NumVal(if bn>0 then bn else -bn)   | _ -> raise Bad_State)
+    | Negative(e) -> (match (calc e) with | NumVal(bn) -> NumVal(- bn) | _ -> raise Bad_State)
 (* Unary operations : Bool *)
-    | Not(e) -> (match (calc e) with | Bool(b) -> Bool(not b) | _ -> raise Bad_State)
+    | Not(e) -> (match (calc e) with | BoolVal(b) -> BoolVal(not b) | _ -> raise Bad_State)
 (* Binary operations : Integers *)
-    | Add(e1, e2)  -> (match ((calc e1), (calc e2)) with | (Num(x1), Num(x2)) -> Num(add x1 x2)  | _ -> raise Bad_State)
-    | Sub(e1, e2)  -> (match ((calc e1), (calc e2)) with | (Num(x1), Num(x2)) -> Num(sub x1 x2)  | _ -> raise Bad_State)
-    | Mult(e1, e2) -> (match ((calc e1), (calc e2)) with | (Num(x1), Num(x2)) -> Num(mult x1 x2) | _ -> raise Bad_State)
-    | Div(e1, e2)  -> (match ((calc e1), (calc e2)) with | (Num(x1), Num(x2)) -> Num(div x1 x2)  | _ -> raise Bad_State)
-    | Rem(e1, e2)  -> (match ((calc e1), (calc e2)) with | (Num(x1), Num(x2)) -> Num(rem x1 x2)  | _ -> raise Bad_State)
+    | Add(e1, e2)  -> (match ((calc e1), (calc e2)) with | (NumVal(x1), NumVal(x2)) -> NumVal(x1 + x2)   | _ -> raise Bad_State)
+    | Sub(e1, e2)  -> (match ((calc e1), (calc e2)) with | (NumVal(x1), NumVal(x2)) -> NumVal(x1 - x2)   | _ -> raise Bad_State)
+    | Mult(e1, e2) -> (match ((calc e1), (calc e2)) with | (NumVal(x1), NumVal(x2)) -> NumVal(x1 * x2)   | _ -> raise Bad_State)
+    | Div(e1, e2)  -> (match ((calc e1), (calc e2)) with | (NumVal(x1), NumVal(x2)) -> NumVal(x1 / x2)   | _ -> raise Bad_State)
+    | Rem(e1, e2)  -> (match ((calc e1), (calc e2)) with | (NumVal(x1), NumVal(x2)) -> NumVal(x1 mod x2) | _ -> raise Bad_State)
 (* Binary operations : Bool *)
-    | Conjunction(e1, e2) -> (match ((calc e1), (calc e2)) with | (Bool(b1), Bool(b2)) -> Bool(b1 && b2) | _ -> raise Bad_State)
-    | Disjunction(e1, e2) -> (match ((calc e1), (calc e2)) with | (Bool(b1), Bool(b2)) -> Bool(b1 || b2) | _ -> raise Bad_State)
+    | Conjunction(e1, e2) -> (match ((calc e1), (calc e2)) with | (BoolVal(b1), BoolVal(b2)) -> BoolVal(b1 && b2) | _ -> raise Bad_State)
+    | Disjunction(e1, e2) -> (match ((calc e1), (calc e2)) with | (BoolVal(b1), BoolVal(b2)) -> BoolVal(b1 || b2) | _ -> raise Bad_State)
 (* Comparison operations *)
-    | Equals(e1, e2) ->    (match ((calc e1), (calc e2)) with | (Num(x1), Num(x2)) -> Bool(eq x1 x2)  | _ -> raise Bad_State)
-    | GreaterTE(e1, e2) -> (match ((calc e1), (calc e2)) with | (Num(x1), Num(x2)) -> Bool(geq x1 x2) | _ -> raise Bad_State)
-    | LessTE(e1, e2) ->    (match ((calc e1), (calc e2)) with | (Num(x1), Num(x2)) -> Bool(leq x1 x2) | _ -> raise Bad_State)
-    | GreaterT(e1, e2) ->  (match ((calc e1), (calc e2)) with | (Num(x1), Num(x2)) -> Bool(gt x1 x2)  | _ -> raise Bad_State)
-    | LessT(e1, e2) ->     (match ((calc e1), (calc e2)) with | (Num(x1), Num(x2)) -> Bool(lt x1 x2)  | _ -> raise Bad_State)
+    | Equals(e1, e2) ->    (match ((calc e1), (calc e2)) with | (NumVal(x1), NumVal(x2)) -> BoolVal(x1 == x2) | _ -> raise Bad_State)
+    | GreaterTE(e1, e2) -> (match ((calc e1), (calc e2)) with | (NumVal(x1), NumVal(x2)) -> BoolVal(x1 >= x2) | _ -> raise Bad_State)
+    | LessTE(e1, e2) ->    (match ((calc e1), (calc e2)) with | (NumVal(x1), NumVal(x2)) -> BoolVal(x1 <= x2) | _ -> raise Bad_State)
+    | GreaterT(e1, e2) ->  (match ((calc e1), (calc e2)) with | (NumVal(x1), NumVal(x2)) -> BoolVal(x1 > x2)  | _ -> raise Bad_State)
+    | LessT(e1, e2) ->     (match ((calc e1), (calc e2)) with | (NumVal(x1), NumVal(x2)) -> BoolVal(x1 < x2)  | _ -> raise Bad_State)
 (* Parenthesis *)
     | InParen(e) -> (calc e)
 (* Conditional *)
-    | IfThenElse(e1, e2, e3) -> (match (calc e1) with |Bool(b) -> (if b then (calc e2) else (calc e3)) | _ -> raise Bad_State)
+    | IfThenElse(e1, e2, e3) -> (match (calc e1) with |BoolVal(b) -> (if b then (calc e2) else (calc e3)) | _ -> raise Bad_State)
 (* Creating N-Tuple *)
-    | Tuple(n, el) -> Tup(n, List.map calc el)
+    | Tuple(n, el) -> TupVal(n, List.map calc el)
 (* Projecting a component of the tuple *)
-    | Project((i, n), e) -> (match (calc e) with | Tup(m, al) -> if not (m == n) then (raise TupleSizeMismatch) else ((List.nth al (i-1))) | _ -> raise Bad_State)
+    | Project((i, n), e) -> (match (calc e) with | TupVal(m, al) -> if not (m == n) then (raise TupleSizeMismatch) else ((List.nth al (i-1))) | _ -> raise Bad_State)
 (* All possible steps covered above, stage below should not be reached *)
     (* | _ -> (raise Bad_State) *)
   in calc ex
 ;;
+
+type answer = Num of bigint | Bool of bool | Tup of int * (answer list)
 
 (* opcodes of the stack machine (in the same sequence as above) *)
 type opcode = VAR of string | NCONST of bigint | BCONST of bool | ABS | UNARYMINUS | NOT
             | PLUS | MINUS | MULT | DIV | REM | CONJ | DISJ | EQS | GTE | LTE | GT | LT
             | PAREN | IFTE | TUPLE of int | PROJ of int*int
 
+(* COMPILER *)
 let compile (ex : exptree) =
   let rec mk_list e = match e with
-(* Void state *)
-      Done -> raise Bad_State
 (* Basics *)
     | N(x) -> [NCONST(mk_big x)]
     | Var(x) -> [VAR(x)]

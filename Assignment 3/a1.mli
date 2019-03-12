@@ -1,8 +1,8 @@
 open A0
 
 (* abstract syntax *)
-type  exptree = Done
-  | Var of string (* variables starting with a Capital letter, represented as alphanumeric strings with underscores (_) and apostrophes (') *)
+type  exptree =
+  Var of string (* variables starting with a Capital letter, represented as alphanumeric strings with underscores (_) and apostrophes (') *)
   | N of int      (* Integer constant *)
   | B of bool     (* Boolean constant *)
   (* unary operators on integers *)
@@ -36,14 +36,17 @@ type  exptree = Done
 
 (* opcodes of the stack machine (in the same sequence as above) *)
 type opcode = VAR of string | NCONST of bigint | BCONST of bool | ABS | UNARYMINUS | NOT
-            | PLUS | MINUS | MULT | DIV | REM | CONJ | DISJ | EQS | GTE | LTE | GT | LT
-            | PAREN | IFTE | TUPLE of int | PROJ of int*int
+  | PLUS | MINUS | MULT | DIV | REM | CONJ | DISJ | EQS | GTE | LTE | GT | LT
+  | PAREN | IFTE | TUPLE of int | PROJ of int*int
+
+(* The type of value returned by the definitional interpreter. *)
+type value = NumVal of int | BoolVal of bool | TupVal of int * (value list)
+(* the definitional interpreter *)
+val eval : exptree -> (string -> value) -> value
 
 (* The language should contain the following types of expressions:  integers and booleans *)
 type answer = Num of bigint | Bool of bool | Tup of int * (answer list)
-
-(* the definitional interpreter *)
-val eval : exptree -> (string -> answer) -> answer
+(* the stack machine *)
 val stackmc: (answer list) -> (string -> answer) -> (opcode list) -> answer
-
+(* the compiler *)
 val compile: exptree -> opcode list
