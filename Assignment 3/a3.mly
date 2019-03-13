@@ -43,18 +43,24 @@
 %type <A1.exptree> main
 /* start */
 %%
+/* PRECEDENCE ORDER */
+/* InParen > Tuple > Project > IfThenElse > Negative > Abs > Div > Mult > Rem > Add > Sub > (GreaterT = LessT = GreaterTE = LessTE = Equals) > Not > Conjunction > Disjunction */
 
 main:
-      EOF                         {Done}
       /* Main */
-      | premain                   { $1 }
-      /* Tuple related */
-      | tuple                     { $1 }
-      | projections               { $1 }
+      | premain EOF                   { $1 }
 
 premain:
+    /* Boolean | Conditional | Arithmetic expressions */
     | expression                  { $1 }
-    | conditional                 { $1 }
+    /* Tuple related */
+    | tuple                     { $1 }
+    | projections               { $1 }
+
+/* CONDITIONAL LAYER */
+conditional:
+    IF expression THEN premain ELSE premain FI    {IfThenElse($2, $4, $6)}
+
 
 /* TUPLE EXPRESSIONS */
 tuple:
@@ -62,16 +68,12 @@ tuple:
     | LP tuple_list RP            { $2 }
 
 tuple_list:
-    main                          {Tuple(1, [$1])}
-    | main COMMA tuple_list       {match $3 with Tuple(x, el) -> Tuple(x+1, $1::el) | _ -> raise Bad_State}
+    premain COMMA premain               {Tuple(2, [$1; $3])}
+    | premain COMMA tuple_list       {match $3 with Tuple(x, el) -> Tuple(x+1, $1::el) | _ -> raise Bad_State}
 
 /* PROJECTIONS */
 projections:
-    PROJ LP INT COMMA INT RP main {Project(($3, $5), $7)}
-
-/* CONDITIONAL LAYER */
-conditional:
-    IF expression THEN premain ELSE premain FI    {IfThenElse($2, $4, $6)}
+    PROJ LP INT COMMA INT RP premain {Project(($3, $5), $7)}
 
 /* MAIN EXPRESSIONS (BOOL AND ARITHMETIC) */
 expression:
@@ -101,16 +103,14 @@ not_expression:
 
 /* Arithmetic expressions (and operations) end here */
 arithmetic_expression:
-    sub_expression                            { $1 }
-    | ABS sub_expression                      {Abs($2)}
-    | TILDA sub_expression                    {Negative($2)}
-
-sub_expression:
-    add_expression MINUS sub_expression       {Sub($1, $3)}
-    | add_expression                          { $1 }
+    add_expression                            { $1 }
 
 add_expression:
-    mult_expression PLUS add_expression       {Add($1, $3)}
+    add_expression PLUS sub_expression        {Add($1, $3)}
+    | sub_expression                          { $1 }
+
+sub_expression:
+    sub_expression MINUS mult_expression      {Sub($1, $3)}
     | mult_expression                         { $1 }
 
 mult_expression:
@@ -122,10 +122,14 @@ div_expression:
     | rem_expression                          { $1 }
 
 rem_expression:
-    basic_unit REM rem_expression             {Rem($1, $3)}
-    | basic_unit                              { $1 }
+    unary_arithmetic REM rem_expression       {Rem($1, $3)}
+    | unary_arithmetic                        { $1 }
 
-/* Basic unit of both bool and integers */
+unary_arithmetic:
+    basic_unit                                { $1 }
+    | ABS unary_arithmetic                    {Abs($2)}
+    | TILDA unary_arithmetic                  {Negative($2)}
+
 basic_unit:
     /* For integers */
     INT                                       {N($1)}
@@ -134,4 +138,6 @@ basic_unit:
     /* For identity markers */
     | ID                                      {Var($1)}
     /* For bracketed expressions */
-    | LP expression RP                        {InParen($2)}
+    | LP premain RP                           {InParen($2)}
+    /* Conditional operations */
+    | conditional                             {$1}
