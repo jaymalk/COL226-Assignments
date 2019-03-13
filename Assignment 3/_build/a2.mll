@@ -15,9 +15,6 @@ let id = ['A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
 
 let sp = [' ' '\t' '\n']+
 
-let digit = ['0'-'9']
-let integer = ('-'|'+')?(['1'-'9']digit* | '0')
-
 
 (* Rule for parsing the tokens *)
 rule read = parse
@@ -61,7 +58,7 @@ rule read = parse
 
 |   id as i             { ID (i)      (* Variable IDs *)}
 
-|   integer as i        {match i.[0] with '+' -> (INT(int_of_string (String.sub i 1 (String.length i - 1))))| _ -> (INT(int_of_string i)) (* INTEGER TYPE *)}
+|   ['0'-'9']+ as n     { INT(int_of_string n) (* INTEGER TYPE *)}
 
 |   eof                 { EOF          (* End of file marker *)}
 
