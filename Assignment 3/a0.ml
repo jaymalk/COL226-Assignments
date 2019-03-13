@@ -90,7 +90,7 @@ let add (a : bigint) (b : bigint) = match (fst a, fst b) with
   | (NonNeg, Neg) -> simple_subtract (snd a) (snd b);;
 
 (* UNARY NEGATION *)
-let minus (a: bigint) = if (fst a) = NonNeg then bigintmake (Neg) (snd a)
+let minus (a: bigint) = if (snd a) = [] then (NonNeg, []) else if (fst a) = NonNeg then bigintmake (Neg) (snd a)
   else bigintmake (NonNeg) (snd a);;
 
 (* SUBTRACTION *)
@@ -138,21 +138,32 @@ let fast_div_rem (l1 : int list) (l2 : int list) =
 
 (* MULTIPLICATION *)
 let mult (a: bigint) (b: bigint) =
+  if (snd a = []) || (snd b = []) then (NonNeg, []) else
   let rec mult_const_add l1 rev_l2 ml lev = match rev_l2 with
       [] -> ml
     | x :: xs -> mult_const_add (left_shift l1 1) (xs)  (propogate_carry((simple_add ml (scalar_mult_list l1 x)))) (lev+1)
   in bigintmake (sp (fst a) (fst b)) (mult_const_add (snd a) (List.rev (snd b)) [] 0);;
 
 (* QUOTIENT *)
-let div (a : bigint) (b : bigint) = match fst a = fst b with
+let div (a : bigint) (b : bigint) =
+  if (snd a) = [] then (NonNeg, []) else
+  match fst a = fst b with
     true -> bigintmake (NonNeg) (fst (fast_div_rem (snd a) (snd b)))
-  | false -> bigintmake (Neg)  (fst (fast_div_rem (snd a) (snd b)))
+    | false -> let res = fst (fast_div_rem (snd a) (snd b)) in
+      match res with
+        [] -> (NonNeg, [])
+      | x  -> bigintmake (Neg) (x)
 ;;
 
 (* REMAINDER *)
-let rem (a : bigint) (b : bigint) = match fst a = NonNeg with
+let rem (a : bigint) (b : bigint) =
+  if (snd a) = [] then (NonNeg, []) else
+  match fst a = NonNeg with
     true -> bigintmake (NonNeg) (snd (fast_div_rem (snd a) (snd b)))
-  | false -> bigintmake (Neg) (snd (fast_div_rem (snd a) (snd b)))
+  | false -> let res = snd (fast_div_rem (snd a) (snd b)) in
+      match res with
+        [] -> (NonNeg, [])
+      | x  -> bigintmake (Neg) (x)
 ;;
 
 (* ABSOLUTE VALUE *)
