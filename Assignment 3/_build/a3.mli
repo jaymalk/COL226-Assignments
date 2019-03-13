@@ -18,10 +18,8 @@ type token =
   | CONJ
   | DISJ
   | EQ
-  | GTA
-  | LTA
-  | GEQ
-  | LEQ
+  | GT
+  | LT
   | BOOL of (bool)
   | INT of (int)
   | ID of (string)
