@@ -114,15 +114,15 @@ sub_expression:
     | mult_expression                         { $1 }
 
 mult_expression:
-    div_expression TIMES mult_expression      {Mult($1, $3)}
+    mult_expression TIMES div_expression      {Mult($1, $3)}
     | div_expression                          { $1 }
 
 div_expression:
-    rem_expression DIV div_expression         {Div($1, $3)}
+    div_expression DIV rem_expression         {Div($1, $3)}
     | rem_expression                          { $1 }
 
 rem_expression:
-    unary_arithmetic REM rem_expression       {Rem($1, $3)}
+    rem_expression REM unary_arithmetic       {Rem($1, $3)}
     | unary_arithmetic                        { $1 }
 
 unary_arithmetic:
