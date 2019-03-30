@@ -59,7 +59,7 @@ premain:
 
 /* CONDITIONAL LAYER */
 conditional:
-    IF expression THEN premain ELSE premain FI    {IfThenElse($2, $4, $6)}
+    IF premain THEN premain ELSE premain FI    {IfThenElse($2, $4, $6)}
 
 
 /* TUPLE EXPRESSIONS */
@@ -78,7 +78,6 @@ projections:
 /* MAIN EXPRESSIONS (BOOL AND ARITHMETIC) */
 expression:
     or_expression                             { $1 }
-    | comparison                              { $1 }
 
 /* COMPARISON */
 comparison:
@@ -100,6 +99,8 @@ and_expression:
 not_expression:
     NOT arithmetic_expression                 {Not($2)}
     | arithmetic_expression                   { $1 }
+    /* Comparison */
+    | comparison                              { $1 }
 
 /* Arithmetic expressions (and operations) end here */
 arithmetic_expression:
