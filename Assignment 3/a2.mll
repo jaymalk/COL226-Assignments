@@ -15,6 +15,10 @@ let id = ['A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
 
 let sp = [' ' '\t' '\n']+
 
+(* INTEGERS *)
+let digit = ['0'-'9']
+let integer = (['1'-'9']digit* | '0')
+
 
 (* Rule for parsing the tokens *)
 rule read = parse
@@ -58,7 +62,8 @@ rule read = parse
 
 |   id as i             { ID (i)      (* Variable IDs *)}
 
-|   ['0'-'9']+ as n     { INT(int_of_string n) (* INTEGER TYPE *)}
+(* |   ['0'-'9']+ as n     { INT(int_of_string n) (* INTEGER TYPE *)} *)
+| integer as i          {(INT(int_of_string i)) (* INTEGER TYPE *)}
 
 |   eof                 { EOF          (* End of file marker *)}
 
