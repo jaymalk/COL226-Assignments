@@ -23,6 +23,7 @@ let binding rho s = toAnswer (rho s);;
 (* Both use the same lexer in A1 but different parser in A3 *)
 let exp_parser s rho = A3.exp_parser A2.read (Lexing.from_string s) ;;
 let def_parser s rho = A3.def_parser A2.read (Lexing.from_string s) ;;
+let type_p s = A3.type_parser A2.read (Lexing.from_string s) ;;
 
 (* Input is given as string and output is a value *)
 let rho s = match s with
@@ -33,12 +34,12 @@ let rho s = match s with
 ;;
 
 (* Sample test case *)
-let e = (exp_parser "\\X.Y" rho);;
+let e = (exp_parser "\\X:Tint.Y" rho);;
 let t = Tfunc (Tint, Tbool);;
 
 (* Type assumptions as a list of tuples of the form (variable name, type) *)
 let g = [("X", Tint); ("Y", Tbool); ("Z", Ttuple [Tint ; Tbool ; Tint]); ("W", Tfunc (Tint, Tbool))];;
-let d = (def_parser "def U = X ; def V = Y" rho);;
+(* let d = (def_parser "def U = X ; def V = Y" rho);; *)
 let g_dash = [("U", Tint); ("V", Tbool)];;
 
 exception NotFound
@@ -49,55 +50,4 @@ let result s = A3.exp_parser A2.read (Lexing.from_string s);;
 let rec item_from_list st g = match g with
     [] -> raise NotFound
   | x :: xs -> if fst x = st then snd x else item_from_list st xs
-;;
-
-(* whattype function to tell which is the type of exp *)
-let rec gettype g e : exptype = match e with
-  (* Basics *)
-  | Var(st) -> item_from_list st g
-  | N(x) -> (Tint)
-  | B(b) -> (Tbool)
-  (* Unary operations : Integers *)
-  | Abs(e) ->      if (gettype g e = Tint) then (Tint) else raise Bad_State
-  | Negative(e) -> if (gettype g e = Tint) then (Tint) else raise Bad_State
-  (* Unary operations : Bool *)
-  | Not(e) ->      if (gettype g e = Tbool) then (Tbool) else raise Bad_State
-  (* Binary operations : Integers *)
-  | Add(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Bad_State
-  | Sub(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Bad_State
-  | Mult(e1, e2) -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Bad_State
-  | Div(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Bad_State
-  | Rem(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Bad_State
-  (* Binary operations : Bool *)
-  | Conjunction(e1, e2) -> if (gettype g e1 = Tbool) && (gettype g e2 = Tbool) then Tbool else raise Bad_State
-  | Disjunction(e1, e2) -> if (gettype g e1 = Tbool) && (gettype g e2 = Tbool) then Tbool else raise Bad_State
-  (* Comparison operations *)
-  | Equals(e1, e2) ->    if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Bad_State
-  | GreaterTE(e1, e2) -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Bad_State
-  | LessTE(e1, e2) ->    if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Bad_State
-  | GreaterT(e1, e2) ->  if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Bad_State
-  | LessT(e1, e2) ->     if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Bad_State
-  (* Parenthesis *)
-  | InParen(e) -> (gettype g e)
-  (* Conditional *)
-  | IfThenElse(e1, e2, e3) -> if (gettype g e1 = Tbool) then (gettype g e2) else raise Bad_State
-  (* Creating N-Tuple *)
-  | Tuple(n, el) -> Ttuple(List.map (gettype g) el)
-  (* Projecting a component of the tuple *)
-  | Project((i, n), e) -> (match e with Tuple(n, el) -> ( gettype g (List.nth el (i-1))) | _ -> raise Bad_State)
-  (* Local definition *)
-  (* | Let(df, e) -> (hastype (g @ (yield g d)) e t) *)
-  (* Functions *)
-  | FunctionAbstraction(st, ex) -> Tfunc(item_from_list st g, gettype g ex)
-  | FunctionCall(e1, e2) -> (let x = gettype g e2 in match gettype g e1 with Tfunc(z, y) -> if z=x then y else raise Bad_State | _ -> raise Bad_State)
-  (* All possible steps covered above, stage below should not be reached *)
-  | _ -> (raise Bad_State)
-;;
-
-(* get yield function to get G' *)
-let rec yield g d = match d with
-    Simple(st, ex) -> [(st, gettype g ex)]
-  | Sequence(dl) -> (let rec seq_yld g dl gl = match dl with [] -> gl | dd::ds -> seq_yld g ds (gl @ (yield (gl@g) dd)) in (seq_yld g dl []))
-  | Parallel(dl) -> List.flatten (List.map (yield g) dl)
-  | Local(dll, dl) -> yield ((yield g dll) @ g) dl
 ;;

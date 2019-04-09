@@ -2,6 +2,8 @@ open A1
 exception Not_implemented
 exception NotFound
 exception Bad_State
+exception Wrong_Type
+exception General_Type
 
 let rec item_from_list st g = match g with
     [] -> raise NotFound
@@ -16,49 +18,48 @@ let rec item_exists st g = match g with
 (* whattype function to tell which is the type of exp *)
 let rec gettype g e : exptype = match e with
   (* Basics *)
-  | Var(st) -> item_from_list st g
+  | Var(st) -> (try item_from_list st g with NotFound -> raise NotFound)
   | N(x) -> (Tint)
   | B(b) -> (Tbool)
   (* Unary operations : Integers *)
-  | Abs(e) ->      if (gettype g e = Tint) then (Tint) else raise Bad_State
-  | Negative(e) -> if (gettype g e = Tint) then (Tint) else raise Bad_State
+  | Abs(e) ->      if (gettype g e = Tint) then (Tint) else raise Wrong_Type
+  | Negative(e) -> if (gettype g e = Tint) then (Tint) else raise Wrong_Type
   (* Unary operations : Bool *)
-  | Not(e) ->      if (gettype g e = Tbool) then (Tbool) else raise Bad_State
+  | Not(e) ->      if (gettype g e = Tbool) then (Tbool) else raise Wrong_Type
   (* Binary operations : Integers *)
-  | Add(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Bad_State
-  | Sub(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Bad_State
-  | Mult(e1, e2) -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Bad_State
-  | Div(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Bad_State
-  | Rem(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Bad_State
+  | Add(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Wrong_Type
+  | Sub(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Wrong_Type
+  | Mult(e1, e2) -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Wrong_Type
+  | Div(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Wrong_Type
+  | Rem(e1, e2)  -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tint) else raise Wrong_Type
   (* Binary operations : Bool *)
-  | Conjunction(e1, e2) -> if (gettype g e1 = Tbool) && (gettype g e2 = Tbool) then Tbool else raise Bad_State
-  | Disjunction(e1, e2) -> if (gettype g e1 = Tbool) && (gettype g e2 = Tbool) then Tbool else raise Bad_State
+  | Conjunction(e1, e2) -> if (gettype g e1 = Tbool) && (gettype g e2 = Tbool) then Tbool else raise Wrong_Type
+  | Disjunction(e1, e2) -> if (gettype g e1 = Tbool) && (gettype g e2 = Tbool) then Tbool else raise Wrong_Type
   (* Comparison operations *)
-  | Equals(e1, e2) ->    if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Bad_State
-  | GreaterTE(e1, e2) -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Bad_State
-  | LessTE(e1, e2) ->    if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Bad_State
-  | GreaterT(e1, e2) ->  if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Bad_State
-  | LessT(e1, e2) ->     if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Bad_State
+  | Equals(e1, e2) ->    if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Wrong_Type
+  | GreaterTE(e1, e2) -> if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Wrong_Type
+  | LessTE(e1, e2) ->    if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Wrong_Type
+  | GreaterT(e1, e2) ->  if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Wrong_Type
+  | LessT(e1, e2) ->     if (gettype g e1 = Tint) && (gettype g e2 = Tint) then (Tbool) else raise Wrong_Type
   (* Parenthesis *)
   | InParen(e) -> (gettype g e)
   (* Conditional *)
-  | IfThenElse(e1, e2, e3) -> if (gettype g e1 = Tbool) && (gettype g e2)=(gettype g e1) then (gettype g e2) else raise Bad_State
+  | IfThenElse(e1, e2, e3) -> if (gettype g e1 = Tbool) && ((gettype g e2)=(gettype g e3)) then (gettype g e2) else raise Wrong_Type
   (* Creating N-Tuple *)
   | Tuple(n, el) -> Ttuple(List.map (gettype g) el)
   (* Projecting a component of the tuple *)
-  | Project((i, n), e) -> (match e with Tuple(n, el) -> ( gettype g (List.nth el (i-1))) | Var(x) -> (match item_from_list x g with Ttuple(l) -> List.nth l (i-1) | _ -> raise Bad_State) | _ -> raise Bad_State)
+  | Project((i, n), e) -> (match (gettype g e) with Ttuple(el) -> ( List.nth el (i-1) ) | _ -> raise Wrong_Type)
   (* Local definition *)
-  (* | Let(df, e) -> (hastype (g @ (yield g d)) e t) *)
+  | Let(df, e) -> (gettype ((yield g df) @ g) e)
   (* Functions *)
-  (* | FunctionAbstraction(st, ex) -> Tfunc(infer_type (st, )::g ex, infer_type g ex) *)
-  | FunctionCall(e1, e2) -> (match gettype g e1 with Tfunc(x, y) -> (match gettype g e2 with Tfunc(z, x) -> Tfunc(z, y) | x -> y) | _ -> raise Bad_State)
+  | FunctionAbstractionType(st, tp, ex) -> Tfunc(tp, gettype ((st, tp)::g) ex)
+  | FunctionCall(e1, e2) -> (match gettype g e1 with Tfunc(x, y) -> (match gettype g e2 with Tfunc(z, x) -> Tfunc(z, y) | x -> y) | _ -> raise Wrong_Type)
   (* All possible steps covered above, stage below should not be reached *)
-  | _ -> (raise Bad_State)
-;;
+  (* | _ -> (raise Bad_State) *)
 
 (* get yield function to get G' *)
-let rec yield g d = match d with
-    Simple(st, ex) -> [(st, gettype g ex)]
+and yield g d = match d with
+  | SimpleType(st, tp, ex) -> if gettype g ex = tp then [(st, tp)] else raise Wrong_Type
   | Sequence(dl) -> (let rec seq_yld g dl gl = match dl with [] -> List.rev gl | dd::ds -> seq_yld g ds ((yield (gl@g) dd) @ gl) in (seq_yld g dl []))
   | Parallel(dl) -> List.flatten (List.map (yield g) dl)
   | Local(dll, dl) -> yield ((yield g dll) @ g) dl
@@ -93,16 +94,16 @@ let rec hastype g e t = match e with
   (* Parenthesis *)
   | InParen(e) -> (hastype g e t)
   (* Conditional *)
-  | IfThenElse(e1, e2, e3) -> (hastype g e1 Tbool) && (hastype g e2 t) && (hastype g e3 t)
+  | IfThenElse(e1, e2, e3) -> (gettype g e) = t
   (* Creating N-Tuple *)
   | Tuple(n, el) -> (match t with Ttuple(x) -> (List.for_all (fun x -> (x = true)) (List.map2 (hastype g) el x)) | _ -> false)
   (* Projecting a component of the tuple *)
-  | Project((i, n), e1) -> (gettype g e) = t
+  | Project((i, n), e1) -> (try let x = (gettype g e1) in (match x with Ttuple(el) -> (List.nth el (n-1) = t) | _ -> raise Wrong_Type) with Wrong_Type -> false)
   (* Local definition *)
-  | Let(df, e) -> (hastype ((yield g df) @ g) e t)
+  | Let(df, e) -> (try (hastype ((yield g df) @ g) e t) with _ -> false)
   (* Functions *)
-  | FunctionAbstraction(st, ex) -> (match t with Tfunc(x, y) -> (gettype ((st, x)::g) ex) = y | _ -> false)
-  | FunctionCall(e1, e2) -> let t1 = (gettype g e2) in (match e1 with FunctionAbstraction(x, y) -> hastype ((x, t1)::g) e1 t | Var(s) -> (item_from_list s g)=(Tfunc(t1, t)) | _ -> false)
+  | FunctionAbstractionType(st, tp, ex) -> (match t with Tfunc(x, y) -> (tp = x && try ((gettype ((st, x)::g) ex) = y) with Wrong_Type-> false) | _ -> false)
+  | FunctionCall(e1, e2) -> (try (let t1 = (gettype g e2) in (match e1 with FunctionAbstractionType(x, tp, y) -> if t1 = tp then hastype ((x, t1)::g) e1 t else false | Var(s) -> (item_from_list s g)=(Tfunc(t1, t)) | _ -> false)) with _ -> false)
   (* All possible steps covered above, stage below should not be reached *)
   (* | _ -> (raise Bad_State) *)
 

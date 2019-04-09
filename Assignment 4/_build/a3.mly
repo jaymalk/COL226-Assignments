@@ -18,13 +18,17 @@
 /* Comparison operations */
 %token  EQ GT LT
 /* For function specifications */
-%token BACKSLASH DOT
+%token BACKSLASH DOT COLON ARROW
 /* Boolean Constants */
 %token  <bool> BOOL
 /* Integer constants */
 %token  <int> INT
 /* String ids */
 %token  <string> ID
+
+/* TYPES */
+/* All possible type-builders for new assignment */
+%token TT, TB, TP, TF
 
 /* DEFINITIONS */
 /* Definitional Keyword */
@@ -42,9 +46,10 @@
 
 
 /* STARTING GRAMMAR */
-%start def_parser exp_parser
+%start def_parser exp_parser type_parser
 %type <A1.definition> def_parser /* Returns definitions */
 %type <A1.exptree> exp_parser /* Returns expression */
+%type <A1.exptype> type_parser /* Returns types */
 %%
 
 /* EXPRESSION GRAMMAR */
@@ -56,28 +61,16 @@ premain:
     /* Boolean | Conditional | Arithmetic expressions */
     | expression                  { $1 }
     /* Tuple related */
-    | tuple                       { $1 }
-    | projections                 { $1 }
-    /* Function Call (Can be over abstractions or projections)*/
+    /* | tuple                       { $1 } */
+    /* | projections                 { $1 } */
 
 /* CONDITIONAL LAYER */
-conditional:
-    IF premain THEN premain ELSE premain FI    {IfThenElse($2, $4, $6)}
-
-
-/* TUPLE EXPRESSIONS */
-tuple:
-    LP RP                         {Tuple(0, [])}
-    | LP tuple_list RP            { $2 }
-
-tuple_list:
-    premain COMMA premain               {Tuple(2, [$1; $3])}
-    | premain COMMA tuple_list       {match $3 with Tuple(x, el) -> Tuple(x+1, $1::el) | _ -> raise Bad_State}
+/* conditional: */
+    /* IF premain THEN premain ELSE premain FI    {IfThenElse($2, $4, $6)} */
 
 /* PROJECTIONS */
-projections:
-    PROJ LP INT COMMA INT RP tuple {Project(($3, $5), $7)}
-  | PROJ LP INT COMMA INT RP ID    {Project(($3, $5), Var($7))}
+
+  /* | PROJ LP INT COMMA INT RP ID    {Project(($3, $5), Var($7))} */
 
 /* MAIN EXPRESSIONS (BOOL AND ARITHMETIC) */
 expression:
@@ -101,7 +94,7 @@ and_expression:
     | not_expression                          { $1 }
 
 not_expression:
-    NOT arithmetic_expression                 {Not($2)}
+    NOT not_expression                        {Not($2)}
     | arithmetic_expression                   { $1 }
     /* Comparison */
     | comparison                              { $1 }
@@ -131,20 +124,41 @@ rem_expression:
     | unary_arithmetic                        { $1 }
 
 unary_arithmetic:
-    func_call                                 { $1 }
+    projections                               { $1 }
     | ABS unary_arithmetic                    {Abs($2)}
     | TILDA unary_arithmetic                  {Negative($2)}
+
+/* Projections */
+projections:
+    PROJ LP INT COMMA INT RP projections      {Project(($3, $5), $7)}
+    | func_call                               { $1 }
+
 
 /* FUNCTIONS */
 func_call:
     /* Call from projection */
-    | projections LP premain RP   {FunctionCall($1, $3)}
-    | func_call LP premain RP     {FunctionCall($1, $3)}
-    | func_abs                    { $1 }
+    | func_call func_abs            {FunctionCall($1, $2)}
+    | func_abs                      { $1 }
 
 func_abs:
-    BACKSLASH ID DOT basic_unit               {FunctionAbstraction($2, $4)}
-    | basic_unit                              { $1 }
+    BACKSLASH ID COLON type_parser DOT func_abs      {FunctionAbstractionType($2, $4, $6)}
+    | conditional                                    { $1 }
+
+/* Conditional */
+conditional:
+    | IF premain THEN premain ELSE premain FI    {IfThenElse($2, $4, $6)}
+    | tuple                                { $1 }
+
+/* TUPLE EXPRESSIONS */
+tuple:
+    LP RP                         {Tuple(0, [])}
+    | LP tuple_list RP            { $2 }
+    | basic_unit                  { $1 }
+
+tuple_list:
+    premain COMMA premain               {Tuple(2, [$1; $3])}
+    | premain COMMA tuple_list          {match $3 with Tuple(x, el) -> Tuple(x+1, $1::el) | _ -> raise Bad_State}
+
 
 basic_unit:
     /* For integers */
@@ -155,8 +169,6 @@ basic_unit:
     | ID                                      {Var($1)}
     /* For bracketed expressions */
     | LP premain RP                           {InParen($2)}
-    /* Conditional operations */
-    | conditional                             {$1}
     /* Local definitions in */
     | LET predef IN premain END               {Let($2, $4)}
 
@@ -177,5 +189,19 @@ series:
 
 basic_def:
     /* Simplest definition */
-    DEF ID EQ premain                      {Simple($2, $4)}
+    | DEF ID COLON type_parser EQ premain      {SimpleType($2, $4, $6)}
 ;
+
+/* TYPE GRAMMAR */
+type_parser:
+    | type_parser ARROW tuple_type          {Tfunc($1, $3)}
+    | tuple_type                            { $1 }
+
+tuple_type:
+    | basic_type TIMES tuple_type           {match $3 with Ttuple(x) -> Ttuple($1::x) | x -> Ttuple($1::x::[])}
+    | basic_type                            {$1}
+
+basic_type:
+    | TT                                    {Tint}
+    | TB                                    {Tbool}
+    | LP type_parser RP                     {$2}

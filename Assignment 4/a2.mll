@@ -8,7 +8,7 @@
 {
   open A3
   exception Not_implemented
-  exception Bad_State
+  exception Lexing_Error
 }
 
 let id = ['A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
@@ -24,6 +24,12 @@ let integer = (['1'-'9']digit* | '0')
 rule read = parse
     sp                  { read lexbuf  (* Ignoring white space. *)}
 
+(* For Inferring the Types (exptype) *)
+|   "Tint"              { TT }
+|   "Tbool"             { TB }
+|   "Tfunc"             { TF }
+|   "Ttuple"            { TP }
+
 |   '('                 { LP        (* Left Parathesis *)}
 |   ')'                 { RP        (* Right Parathesis *)}
 
@@ -31,6 +37,8 @@ rule read = parse
 |   "proj"              { PROJ      (* Projector Syntax for N-Tuples *)}
 
 |   "def"               { DEF       (* Definitional Keyword *)}
+|   ':'                 { COLON }
+|   "->"                { ARROW }
 |   ';'                 { SEMICOLON }
 |   '|'                 { PARALLEL }
 |   '\\'                { BACKSLASH }
@@ -75,4 +83,4 @@ rule read = parse
 
 |   eof                 { EOF          (* End of file marker *)}
 
-|   _                   { raise Bad_State}
+|   _                   { raise Lexing_Error }

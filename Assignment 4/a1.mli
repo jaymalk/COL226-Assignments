@@ -1,5 +1,8 @@
 open A0
 
+(* The possible types of expressions in the language of expressions *)
+type exptype = Tint | Tunit | Tbool | Ttuple of (exptype list) | Tfunc of (exptype * exptype)
+
 (* abstract syntax *)
 type  exptree =
   Var of string (* variables starting with a Capital letter, represented as alphanumeric strings with underscores (_) and apostrophes (') *)
@@ -34,11 +37,14 @@ type  exptree =
   (* projecting the i-th component of an expression (which evaluates to an n-tuple, and 1 <= i <= n) *)
   | Project of (int*int) * exptree   (* Proj((i,n), e)  0 < i <= n *)
   | Let of definition * exptree
-  | FunctionAbstraction of string * exptree
+  (* | FunctionAbstraction of string * exptree *)
   | FunctionCall of exptree * exptree
+  (* New Function Abstraction (A4 extension) *)
+  | FunctionAbstractionType of string * exptype * exptree
 (* definition *)
 and definition =
-    Simple of string * exptree
+    (* Simple of string * exptree *)
+  | SimpleType of string * exptype * exptree
   | Sequence of (definition list)
   | Parallel of (definition list)
   | Local of definition * definition
@@ -48,9 +54,6 @@ type opcode = VAR of string | NCONST of bigint | BCONST of bool | ABS | UNARYMIN
   | PLUS | MINUS | MULT | DIV | REM | CONJ | DISJ | EQS | GTE | LTE | GT | LT
   | PAREN | IFTE | TUPLE of int | PROJ of int*int | LET | FABS | FCALL
   | SIMPLEDEF | SEQCOMPOSE | PARCOMPOSE | LOCALDEF
-
-(* The possible types of expressions in the language of expressions *)
-type exptype = Tint | Tunit | Tbool | Ttuple of (exptype list) | Tfunc of (exptype * exptype)
 
 (* The type of value returned by the definitional interpreter. *)
 type value = NumVal of int | BoolVal of bool | TupVal of int * (value list)

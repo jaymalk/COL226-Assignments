@@ -22,9 +22,15 @@ type token =
   | LT
   | BACKSLASH
   | DOT
+  | COLON
+  | ARROW
   | BOOL of (bool)
   | INT of (int)
   | ID of (string)
+  | TT
+  | TB
+  | TP
+  | TF
   | DEF
   | LET
   | IN
@@ -39,3 +45,5 @@ val def_parser :
   (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> A1.definition
 val exp_parser :
   (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> A1.exptree
+val type_parser :
+  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> A1.exptype
