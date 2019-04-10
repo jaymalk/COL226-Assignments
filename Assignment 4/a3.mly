@@ -194,7 +194,7 @@ basic_def:
 
 /* TYPE GRAMMAR */
 type_parser:
-    | type_parser ARROW tuple_type          {Tfunc($1, $3)}
+    | tuple_type ARROW type_parser          {Tfunc($1, $3)}
     | tuple_type                            { $1 }
 
 tuple_type:
