@@ -131,8 +131,12 @@ unary_arithmetic:
 /* Projections */
 projections:
     PROJ LP INT COMMA INT RP projections      {Project(($3, $5), $7)}
-    | func_call                               { $1 }
+    | conditional                             { $1 }
 
+/* Conditional */
+conditional:
+    | IF premain THEN premain ELSE premain FI    {IfThenElse($2, $4, $6)}
+    | func_call                                  { $1 }
 
 /* FUNCTIONS */
 func_call:
@@ -142,12 +146,8 @@ func_call:
 
 func_abs:
     BACKSLASH ID COLON type_parser DOT func_abs      {FunctionAbstractionType($2, $4, $6)}
-    | conditional                                    { $1 }
+    | tuple                                          { $1 }
 
-/* Conditional */
-conditional:
-    | IF premain THEN premain ELSE premain FI    {IfThenElse($2, $4, $6)}
-    | tuple                                { $1 }
 
 /* TUPLE EXPRESSIONS */
 tuple:
