@@ -28,7 +28,7 @@
 
 /* TYPES */
 /* All possible type-builders for new assignment */
-%token TT, TB, TP, TF
+%token TT, TB, TP, TF, TU
 
 /* DEFINITIONS */
 /* Definitional Keyword */
@@ -198,10 +198,15 @@ type_parser:
     | tuple_type                            { $1 }
 
 tuple_type:
-    | basic_type TIMES tuple_type           {match $3 with Ttuple(x) -> Ttuple($1::x) | x -> Ttuple($1::x::[])}
+    | tuple_type_list                       {$1}
     | basic_type                            {$1}
+
+tuple_type_list:
+    basic_type TIMES basic_type             {Ttuple([$1; $3])}
+    | basic_type TIMES tuple_type_list      {match $3 with Ttuple(tl) -> Ttuple($1::tl) | _ -> raise Bad_State}
 
 basic_type:
     | TT                                    {Tint}
     | TB                                    {Tbool}
+    | TU                                    {Tunit}
     | LP type_parser RP                     {$2}

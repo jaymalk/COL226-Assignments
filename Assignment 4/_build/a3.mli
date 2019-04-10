@@ -31,6 +31,7 @@ type token =
   | TB
   | TP
   | TF
+  | TU
   | DEF
   | LET
   | IN

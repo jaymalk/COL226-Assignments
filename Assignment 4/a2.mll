@@ -26,6 +26,7 @@ rule read = parse
 
 (* For Inferring the Types (exptype) *)
 |   "Tint"              { TT }
+|   "Tunit"             { TU }
 |   "Tbool"             { TB }
 |   "Tfunc"             { TF }
 |   "Ttuple"            { TP }
