@@ -47,7 +47,18 @@ exception Bad_State
 
 let result s = A3.exp_parser A2.read (Lexing.from_string s);;
 
+exception Not_implemented
+exception NotFound
+exception Bad_State
+exception Wrong_Type of string
+exception General_Type
+
 let rec item_from_list st g = match g with
     [] -> raise NotFound
   | x :: xs -> if fst x = st then snd x else item_from_list st xs
+;;
+
+let rec item_exists st g = match g with
+    [] -> false
+  | x :: xs -> if(fst x = st) then true else item_exists st xs
 ;;
