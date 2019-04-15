@@ -1,0 +1,14 @@
+#load "bigint.cmo";;
+#load "exptree.cmo";;
+#load "lexer.cmo";;
+#load "parser.cmo";;
+
+open Bigint ;;
+open Exptree ;;
+open Parser ;;
+open Lexer ;;
+
+
+(* Both use the same lexer in Exptree but different parser in Parser *)
+let parse s = Parser.exp_parser Lexer.read (Lexing.from_string s) ;;
+let def s = Parser.def_parser Lexer.read (Lexing.from_string s) ;;
