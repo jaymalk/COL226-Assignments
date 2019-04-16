@@ -63,6 +63,11 @@ and definition =
   | While of exptree * definition
   ;;
 
+
+(* ================================================ *)
+(* SIMPLE EVALUATOR (DEFINITIONAL) *)
+(* ================================================ *)
+
 (* The type of value returned by the definitional interpreter. *)
 type value = NumVal of int | BoolVal of bool | TupVal of int * (value list)
            | Func of (((string* value) list) * string * exptree) | RecFunc of (((string* value) list) * string * string * exptree)
@@ -145,17 +150,28 @@ and extension (table : (string * value) list) (d : definition) = match d with
     | While(e, d) -> (match (eval e table) with BoolVal true -> (extension ((extension table d)@table) d)| BoolVal false -> table| _ -> raise Bad_State)
 ;;
 
+(* KRIVINE MACHINE SETUP *)
+
+(* Krivine Operational Codes *)
+type precode = INT of int | VR of string | BOOL of bool | PLUS of (precode list) * (precode list) | MULT of (precode list) * (precode list)
+| AND of (precode list) * (precode list) | OR of (precode list) * (precode list) | CMP of (precode list) | IFTE of (precode list) * (precode list) * (precode list)
+| LAM of string * (precode list) | APP of (precode list) * (precode list)
+
+
+(* ================================================ *)
+(* SECD MACHINE *)
+(* ================================================ *)
+
 (* Opcodes for compilation *)
-(* opcodes of the stack machine (in the same sequence as above) *)
 type opcode = VAR of string | N of int | B of bool | ABS | UNARYMINUS | NOT
   | PLUS | MINUS | MULT | DIV | REM | CONJ | DISJ | CMP | EQS | GTE | LTE | GT | LT
   | PAREN | COND of (opcode list * opcode list) | TUPLE of int | PROJ of int*int 
   | LET of (opcode list) * (opcode list) 
-  | CLOS of string * (opcode list) | APP | RET | DEFRET
-  | DEF of string * (opcode list) | SEQCOMPOSE of (opcode list) | PARCOMPOSE of (opcode list) | LOCALDEF of (opcode)*(opcode) | WHILE of (opcode list)*(opcode)
+  | CLOS of string * (opcode list) | RCLOS of string * string * (opcode list) | APP | RET | SET | DEFRET
+  | DEF of string | SEQCOMPOSE of (opcode list) | PARCOMPOSE of (opcode list) | LOCALDEF of (opcode)*(opcode) | WHILE of (opcode list)*(opcode)
   | EXIT | WATCH | NULL
 
-(* OPCODE CONVERTER *)
+(* OPCODE CONVERTER FOR SECD *)
 let rec compile (ex : exptree) : opcode list = match ex with
     | Integer(x) -> [N(x)]
     | V(x) -> [VAR(x)]
@@ -193,31 +209,35 @@ let rec compile (ex : exptree) : opcode list = match ex with
     (* Projecting a component of the tuple *)
     | Project((i, n), e) -> (compile e) @ [PROJ(i, n)]
     (* Let statements in expressions *)
-    | Let(d, e) -> [LET([def_compile d], compile e)]
+    | Let(d, e) -> [LET(def_compile d, compile(e)@[RET])]
     (* Function Abstraction *)
-    | Lambda(st, e1) -> [CLOS( st, compile(e1)@[RET] )]
+    | Lambda(st, e1) -> [CLOS( st, compile(e1)@[RET])]
     (* Recursive Function Abstraction *)
-    (* | RecFuncAbs(nm, st, e1) ->  *)
+    | RecFuncAbs(nm, st, e1) -> [RCLOS(nm, st, compile(e1)@[RET])]
     (* Function Call *)
     | App(e1, e2) -> (compile e1) @ (compile e2) @ [APP]
     (* Handle commands *)
     | Null -> [NULL]
     | Watch -> [WATCH]
     | Exit -> [EXIT]
-    | _ -> []
-
-and def_compile (df : definition) : opcode = match df with
-    | SimpleType(st, ex) -> DEF(st, compile ex)
-    | Sequence(dl) -> SEQCOMPOSE(List.map def_compile dl)
-    | Parallel(dl) -> PARCOMPOSE(List.map def_compile dl)
-    | Local(d1, d2) -> LOCALDEF(def_compile d1, def_compile d2)
+(* OPCODE CONVERTER IN DEFINITIONS *)
+and def_compile (df : definition) : opcode list = match df with
+    | SimpleType(st, ex) -> ((compile ex) @ [DEF(st)])
+    | Sequence(dl) -> (match dl with [] -> [] | d :: ds -> (def_compile d)@(def_compile (Sequence(ds))))
+    | _ -> print_string("Definition not implemented"); raise Not_implemented    
+    (* | Parallel(dl) -> PARCOMPOSE(List.map def_compile dl) *)
+    (* | Local(d1, d2) -> LOCALDEF(def_compile d1, def_compile d2) *)
     (* While Loop *)
-    | While(e, d) -> WHILE(compile e, def_compile d)
+    (* | While(e, d) -> WHILE(compile e, def_compile d) *)
 
-(* ANSWER, GAMMA and CLOSURE TYPES *)
-type answer = Num of int | Bl of bool | Tup of int * (answer list)
+(* ------------------------------------------------------------------------ *)
+(* ANSWER, GAMMA and CLOSURE TYPES | FOR SECD MACHINE and KRIVINE MACHINE *)
+type answer = Num of int | Bool of bool | Tup of int * (answer list)
 and gamma = (string * closure) list
-and closure = VCL of (answer * gamma) | CL of (exptree * gamma) |FunCL of (string * (opcode list) * gamma)
+and closure = VCL of (answer * gamma) | CL of (precode list * gamma) | FCL of (string * precode list * gamma)
+            |FunCL of (string * (opcode list) * gamma) | RFunCL of (string * string * (opcode list) * gamma)
+(* ------------------------------------------------------------------------ *)
+
 
 let rec get ((st, gm) : (string * gamma)) = match gm with
 [] -> raise (Not_Found(st));
@@ -225,19 +245,19 @@ let rec get ((st, gm) : (string * gamma)) = match gm with
 ;; 
 
 (* SECD Operation *)
-let rec secd (stack : closure list) (env : gamma) (code : opcode list) (dump : ((closure list)*(gamma)*(opcode list)) list) : closure = match (stack, code) with
+let rec secd (stack : closure list) (env : gamma) (code : opcode list) (dump : ((closure list)*(gamma)*(opcode list)) list) = match (stack, code) with
 (* Evaluation Complete *)
-| (stack, []) -> (List.hd stack)
+| (stack, []) -> (stack, env)
 (* Basic Value closures *)
 | (_, N(x)::code') ->    secd (VCL(Num(x), [])::stack) env code' dump
 | (_, VAR(st)::code') -> secd (get(st, env)::stack) env code' dump
-| (_, B(b)::code') ->    secd (VCL(Bl(b), [])::stack) env code' dump
+| (_, B(b)::code') ->    secd (VCL(Bool(b), [])::stack) env code' dump
 (*---------- EXPRESSIONS ----------*)
 (* Unary operations : Integers *)
 | (VCL(Num(x), e')::stack', ABS::code') ->  secd (VCL(Num(if x<0 then - x else x), e')::stack') env code' dump
 | (VCL(Num(x), e')::stack', UNARYMINUS::code') ->  secd (VCL(Num(-x), e')::stack') env code' dump
 (* Unary operations : Bool *)
-| (VCL(Bl(b), e')::stack', NOT::code') ->  secd (VCL(Bl(not b), e')::stack') env code' dump
+| (VCL(Bool(b), e')::stack', NOT::code') ->  secd (VCL(Bool(not b), e')::stack') env code' dump
 (* Binary operations : Integers *)
 | (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', PLUS::code') ->  secd (VCL(Num(x1+x2), e')::stack') env code' dump
 | (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', MINUS::code') ->  secd (VCL(Num(x2-x1), e')::stack') env code' dump
@@ -245,36 +265,85 @@ let rec secd (stack : closure list) (env : gamma) (code : opcode list) (dump : (
 | (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', DIV::code') ->  secd (VCL(Num(x2/x1), e')::stack') env code' dump
 | (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', REM::code') ->  secd (VCL(Num(x2 mod x1), e')::stack') env code' dump
 (* Binary operations : Bool *)
-| (VCL(Bl(b1), e')::VCL(Bl(b2), e'')::stack', CONJ::code') ->  secd (VCL(Bl(b1 && b2), e')::stack') env code' dump
-| (VCL(Bl(b1), e')::VCL(Bl(b2), e'')::stack', DISJ::code') ->  secd (VCL(Bl(b1 || b2), e')::stack') env code' dump
+| (VCL(Bool(b1), e')::VCL(Bool(b2), e'')::stack', CONJ::code') ->  secd (VCL(Bool(b1 && b2), e')::stack') env code' dump
+| (VCL(Bool(b1), e')::VCL(Bool(b2), e'')::stack', DISJ::code') ->  secd (VCL(Bool(b1 || b2), e')::stack') env code' dump
 (* Comparison operations *)
-| (VCL(Num(x), e')::stack', CMP::code') ->  secd (VCL(Bl(x=0), e')::stack') env code' dump
-| (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', EQS::code') ->  secd (VCL(Bl(x1=x2), e')::stack') env code' dump
-| (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', GTE::code') ->  secd (VCL(Bl(x2>=x1), e')::stack') env code' dump
-| (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', LTE::code') ->  secd (VCL(Bl(x2<=x1), e')::stack') env code' dump
-| (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', GT::code') ->  secd (VCL(Bl(x2>x1), e')::stack') env code' dump
-| (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', LT::code') ->  secd (VCL(Bl(x1>x2), e')::stack') env code' dump
+| (VCL(Num(x), e')::stack', CMP::code') ->  secd (VCL(Bool(x>0), e')::stack') env code' dump
+| (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', EQS::code') ->  secd (VCL(Bool(x1=x2), e')::stack') env code' dump
+| (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', GTE::code') ->  secd (VCL(Bool(x2>=x1), e')::stack') env code' dump
+| (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', LTE::code') ->  secd (VCL(Bool(x2<=x1), e')::stack') env code' dump
+| (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', GT::code') ->  secd (VCL(Bool(x2>x1), e')::stack') env code' dump
+| (VCL(Num(x1), e')::VCL(Num(x2), e'')::stack', LT::code') ->  secd (VCL(Bool(x1>x2), e')::stack') env code' dump
 (* Parenthesis *)
 | (st, PAREN::code') -> secd st env code' dump
 (* Conditional *)
-| (VCL(Bl(b), e')::stack', COND(c1, c2)::code') ->  if b then 
+| (VCL(Bool(b), e')::stack', COND(c1, c2)::code') ->  if b then 
             secd stack' env (c1@code') dump else secd stack' env (c2@code') dump
 (* N-tuples *)
-(* | (stack, TUPLE(m)::code') -> Important case : Handle carefully... *)
+| (stack, TUPLE(m)::code') -> (let rec take_out_and_put_back l1 l2 n_org nn = match nn with
+  0 -> (VCL(Tup(n_org, l1), [])::l2)
+| nn -> (match l2 with
+      VCL(x, _) :: xs -> (take_out_and_put_back (x::l1) xs n_org (nn-1))
+    | _ -> print_string("Tuple not possible\n");raise Bad_State)
+in secd (take_out_and_put_back [] stack m m) env code' dump)
 (* Projection *)
 | (VCL(Tup(n, al), e')::stack', PROJ(i, m)::code') -> if m=n then secd ((VCL(List.nth al (i-1), e'))::stack') env code' dump else raise TupleSizeMismatch
 (* Let statements *)
+| (stack, LET(c1, c2)::code') -> secd [] env (c1@c2) ((stack, env, code') :: dump)
 (* Function Abstraction *)
 | (stack', CLOS(st, c')::code') -> secd (FunCL(st, c', env)::stack') env code' dump
+(* Recursive Function Abstraction *)
+| (stack', RCLOS(nm, st, c')::code') -> secd (RFunCL(nm, st, c', env)::stack') env code' dump
 (* Function Call *)
 | (VCL(a1, e')::FunCL(st, c1, e'')::stack', APP::code') -> secd [] ((st, VCL(a1, e'))::e'') c1 ((stack', env, code') :: dump)
+(* Recursive Function Call *)
+| (VCL(a1, e')::RFunCL(nm, st, c1, e'')::stack', APP::code') -> secd [] ((st, VCL(a1, e'))::(nm, RFunCL(nm, st, c1, e''))::e'') c1 ((stack', env, code') :: dump)
 (* RETURN CODE *)
 | (vcl :: stack'', RET::code'') -> (match dump with [] -> raise Bad_State | (s, ev, cd)::xs -> secd (vcl::s) ev cd xs)
 (*------------ DEFINITIONS ------------*)
-(* Definitional return code/case *)
 (* Simple *)
-| (stack, DEF(st, c')::code') -> secd stack env code' dump
-(* Sequential and Parallel *)
-(* Local *)
-(* While loop ? *)
-| _ -> raise Bad_State
+| (vcl::stack', DEF(st)::code') -> secd stack' ((st, vcl)::env) code' (dump)
+(* Sequential and Parallel (NOT SET) *)
+(* Local (NOT SET) *)
+(* While loop ? (NOT SET) *)
+| _ -> print_string("Problem : Not Implemented\n"); raise Not_implemented
+
+
+(* ================================================ *)
+(* KRIVINE MACHINE *)
+(* ================================================ *)
+
+(* Krivine Compiler *)
+let rec krivine_compile (ex : exptree) = match ex with
+    | Integer(x) -> [INT x]
+    | V st -> [VR st]
+    | Bool b -> [BOOL b]
+    | Plus(x1, x2) -> [PLUS(krivine_compile x1, krivine_compile x2)]
+    | Mult(x1, x2) -> [MULT(krivine_compile x1, krivine_compile x2)]
+    | And(b1, b2) -> [AND(krivine_compile b1, krivine_compile b2)]
+    | Cmp(x) -> [CMP(krivine_compile x)]
+    | If_Then_Else(e1, e2, e3) -> [IFTE(krivine_compile e1, krivine_compile e2, krivine_compile e3)]
+    | Lambda(st, e1) -> [LAM(st, krivine_compile e1)]
+    | App(e1, e2) -> [APP(krivine_compile e1, krivine_compile e2)]
+    | _ -> raise Not_implemented
+
+(* Krivine Solver *)
+let rec krivine (stack : closure list) (env : gamma) (pc : precode list) = match pc with
+    | [] -> (List.hd stack)
+    | INT(x) :: pc' -> krivine ((VCL(Num x, env))::stack) env pc'
+    | VR(x) :: pc' -> krivine (get(x, env)::stack) env pc'
+    | BOOL(b) :: pc' -> krivine (VCL(Bool b, env)::stack) env pc'
+    (* Binary operations : Integers *)
+    | PLUS(e1, e2) :: pc' ->   (let x1 = (krivine stack env e1) in let x2 = (krivine stack env e2) in match (x1, x2) with ((VCL(Num a1, env')), (VCL(Num a2, env''))) -> (krivine (VCL(Num (a1+a2), [])::stack) env pc') | _ -> raise Bad_State)
+    | MULT(e1, e2) :: pc' ->   (let x1 = (krivine stack env e1) in let x2 = (krivine stack env e2) in match (x1, x2) with ((VCL(Num a1, env')), (VCL(Num a2, env''))) -> (krivine (VCL(Num (a1*a2), [])::stack) env pc') | _ -> raise Bad_State)
+    (* Binary operations : Bool *)
+    | AND(e1, e2) :: pc'  ->    (let x1 = (krivine stack env e1) in let x2 = (krivine stack env e2) in match (x1, x2) with ((VCL(Bool b1, env')), (VCL(Bool b2, env''))) -> (krivine (VCL(Bool (b1 && b2), [])::stack) env pc') | _ -> raise Bad_State)
+    | OR(e1, e2) :: pc' ->     (let x1 = (krivine stack env e1) in let x2 = (krivine stack env e2) in match (x1, x2) with ((VCL(Bool b1, env')), (VCL(Bool b2, env''))) -> (krivine (VCL(Bool (b1 || b2), [])::stack) env pc') | _ -> raise Bad_State)
+    (* Comparison operations *)
+    | CMP(e) :: pc' -> (let x = (krivine stack env e) in match x with (VCL(Num a1, env')) -> krivine (VCL(Bool (a1>0), env')::stack) env pc' | _ -> raise Bad_State)
+    (* Conditional *)
+    | IFTE(e1, e2, e3) :: pc' -> (let x = (krivine stack env e1) in match x with (VCL(Bool true, env')) -> (krivine stack env (e2@pc')) | (VCL(Bool false, env')) -> (krivine stack env (e3@pc')) | _ -> raise Bad_State)
+    (* Function Abstraction *)
+    | LAM(st, e1) :: pc' -> (krivine (FCL(st, e1, env)::stack) env  pc')
+    (* Function Call *)
+    | APP(e1, e2) :: pc' -> (let func = (krivine [] env e1) in let arg = (krivine [] env e2) in match (func, arg) with (FCL(st, ex, env'), _) -> krivine ((krivine stack ((st, arg)::env') ex)::stack) env pc' | _ -> raise Bad_State)
