@@ -22,7 +22,7 @@ let rec print_table (table : ((string * Exptree.value) list)) =
   | x :: xs -> print_string("\n"^(fst x)^" :"); print_val(snd x); print_table xs
 
 and print_val vl = match vl with
-  | Exptree.NumVal(x) -> print_string(" Integer : "^(Bigint.print_num(x)));
+  | Exptree.NumVal(x) -> print_string(" Integer : ");(print_int(x));
   | Exptree.BoolVal(b) -> if b then print_string(" Bool : True ") else print_string(" Bool : False ")
   | Exptree.TupVal(n, tl) -> print_string(" Tuple (");
     (let rec printup tl = match tl with [] -> print_char(')') | x::[] -> print_val(x); print_char ')'| x::xs -> print_val(x); print_char(','); printup(xs) in printup(tl))

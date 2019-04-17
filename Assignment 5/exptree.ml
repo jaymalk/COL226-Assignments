@@ -323,6 +323,7 @@ let rec krivine_compile (ex : exptree) = match ex with
     | And(b1, b2) -> [AND(krivine_compile b1, krivine_compile b2)]
     | Cmp(x) -> [CMP(krivine_compile x)]
     | If_Then_Else(e1, e2, e3) -> [IFTE(krivine_compile e1, krivine_compile e2, krivine_compile e3)]
+    | InParen(e) -> (krivine_compile e)
     | Lambda(st, e1) -> [LAM(st, krivine_compile e1)]
     | App(e1, e2) -> [APP(krivine_compile e1, krivine_compile e2)]
     | _ -> raise Not_implemented
