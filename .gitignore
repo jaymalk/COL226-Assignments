@@ -10,3 +10,8 @@ a.out
 # Test case files and generators
 *.txt
 *.py
+
+# Ignored bit files
+secd
+krivine
+basic

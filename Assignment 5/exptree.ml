@@ -248,6 +248,9 @@ let rec get ((st, gm) : (string * gamma)) = match gm with
 let rec secd (stack : closure list) (env : gamma) (code : opcode list) (dump : ((closure list)*(gamma)*(opcode list)) list) = match (stack, code) with
 (* Evaluation Complete *)
 | (stack, []) -> (stack, env)
+(* User level opcodes, for interpreter *)
+| (stack , EXIT::code') -> exit 0
+| (stack , NULL::code') -> (secd stack env code' dump)
 (* Basic Value closures *)
 | (_, N(x)::code') ->    secd (VCL(Num(x), [])::stack) env code' dump
 | (_, VAR(st)::code') -> secd (get(st, env)::stack) env code' dump

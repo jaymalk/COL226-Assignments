@@ -9,6 +9,7 @@
   open Parser
   open Bigint
   exception Not_implemented
+  exception Compiler_Start
   exception Bad_Char of char
 }
 
@@ -23,6 +24,8 @@ let integer = ['0'-'9']+
 (* Rule for parsing the tokens *)
 rule read = parse
     sp                  { read lexbuf  (* Ignoring white space. *)}
+
+|   '$'                 { raise Compiler_Start (* Prompting the work of compiler. *)}
 
 |   '('                 { LP        (* Left Parathesis *)}
 |   ')'                 { RP        (* Right Parathesis *)}
