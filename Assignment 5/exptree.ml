@@ -335,7 +335,7 @@ let rec krivine_compile (ex : exptree) = match ex with
 let rec krivine (stack : closure list) (env : gamma) (pc : precode list) = match pc with
     | [] -> (List.hd stack)
     | INT(x) :: pc' -> krivine ((VCL(Num x, env))::stack) env pc'
-    | VR(x) :: pc' -> krivine (get(x, env)::stack) env pc'
+    | VR(x) :: pc' -> (match get(x, env) with CL(pc, env') -> (let x' = krivine [] env' pc in krivine (x'::stack) env pc')| _ as x -> krivine (x::stack) env pc')
     | BOOL(b) :: pc' -> krivine (VCL(Bool b, env)::stack) env pc'
     (* Binary operations : Integers *)
     | PLUS(e1, e2) :: pc' ->   (let x1 = (krivine stack env e1) in let x2 = (krivine stack env e2) in match (x1, x2) with ((VCL(Num a1, env')), (VCL(Num a2, env''))) -> (krivine (VCL(Num (a1+a2), [])::stack) env pc') | _ -> raise Bad_State)
@@ -350,4 +350,4 @@ let rec krivine (stack : closure list) (env : gamma) (pc : precode list) = match
     (* Function Abstraction *)
     | LAM(st, e1) :: pc' -> (krivine (FCL(st, e1, env)::stack) env  pc')
     (* Function Call *)
-    | APP(e1, e2) :: pc' -> (let func = (krivine [] env e1) in let arg = (krivine [] env e2) in match (func, arg) with (FCL(st, ex, env'), _) -> krivine ((krivine stack ((st, arg)::env') ex)::stack) env pc' | _ -> raise Bad_State)
+    | APP(e1, e2) :: pc' -> (let func = (krivine [] env e1) in match func with FCL(st, ex, env') -> krivine ((krivine stack ((st, CL(e2, env))::env') ex)::stack) env pc' | _ -> raise Bad_State)
