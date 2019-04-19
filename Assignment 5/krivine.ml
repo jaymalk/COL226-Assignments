@@ -1,4 +1,5 @@
 open Bigint
+open Krivine_compiler
 open Exptree
 open Lexer
 open Parser
@@ -9,7 +10,7 @@ let compiled_list : precode list ref = ref [];;
 let environment : gamma ref = ref [];;
 
 let rec answer_string ans = match ans with
-| Num i -> "Integer : "^string_of_int(i)
+| Num i -> "Integer : "^print_num(i)
 | Bool b -> "Bool : "^string_of_bool(b)
 | Tup (n, al) ->
   (let rec tuple_ans alist str = match alist with
@@ -53,7 +54,7 @@ let _ =
       | (Read_Definition) -> (compiled_list := ((!compiled_list) @ [krivine_def_compile (Parser.def_parser Lexer.read (lexbuf))] )); (Lexing.new_line lexbuf);
       | _ as e -> raise e
     with
-    | Exptree.Not_Found(s) -> print_string("Variable "^s^" not in table (at time of abstraction).\n"); (compiled_list := []);
+    | Exptree.Not_Found(s) -> print_string("\027[1;33mVariable "^s^" not in table (at time of abstraction).\027[0m\n"); (compiled_list := []);
     | (Lexer.Bad_Char s) -> print_string("Illegal Character : "); print_char(s); print_string("\n"); Lexing.flush_input lexbuf;
     | Stack_overflow -> print_string("Stack Overflow\n")
     | _  -> print_string("Error\n"); Lexing.flush_input lexbuf; (compiled_list := []);

@@ -1,5 +1,6 @@
 open Bigint
 open Exptree
+open Secd_compiler
 open Lexer
 open Parser
 
@@ -9,7 +10,7 @@ let compiled_list : opcode list ref = ref [];;
 let environment : gamma ref = ref [];;
 
 let rec answer_string ans = match ans with
-| Num i -> "Integer : "^string_of_int(i)
+| Num i -> "Integer : "^print_num(i)
 | Bool b -> "Bool : "^string_of_bool(b)
 | Tup (n, al) ->
   (let rec tuple_ans alist str = match alist with
@@ -24,7 +25,7 @@ let rec closure_string (cl : closure) = match cl with
 | VCL (an, gm) -> answer_string(an)
 | FunCL (st, oc, gm) -> "Function with Var("^st^")"
 | RFunCL (nm, st, oc, gm) -> "Recursive Function with Var("^st^")"
-| _ -> raise Improper_Closure;;
+;;
 
 let rec process (env : gamma) = 
   let rec remove_extras (x) (e') = match e' with
@@ -35,7 +36,7 @@ let rec process (env : gamma) =
 | x :: xs -> x::process(remove_extras (fst x) env)
 ;;
 
-let work_out ( (stk, env) : Exptree.closure list * Exptree.gamma) = 
+let work_out ( (stk, env) : closure list * gamma) = 
   environment := process(env);
   print_string("\027[1;31mStack Contents\n"); flush stdout;
   let rec work_stack stack = 

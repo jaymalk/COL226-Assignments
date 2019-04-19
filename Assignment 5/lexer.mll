@@ -90,8 +90,8 @@ rule read = parse
 
 |   id as i             { ID (i)      (* Variable IDs *)}
 
-|   ['0'-'9']+ as n     { INT(int_of_string n) (*INTEGER TYPE*) }
-(* | integer as i          {(INT(Bigint.bigint_of_string i)) (* INTEGER TYPE *) } *)
+(* |   ['0'-'9']+ as n     { INT(int_of_string n) INTEGER TYPE } *)
+| integer as i          {(INT(Bigint.bigint_of_string i)) (* INTEGER TYPE *) }
 
 |   eof                 { EOF          (* End of file marker *)}
 

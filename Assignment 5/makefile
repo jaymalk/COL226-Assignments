@@ -4,12 +4,14 @@ basic:
 	@ocamlc -o basic bigint.cmo exptree.cmo parser.cmo lexer.cmo interpreter.cmo 
 secd:
 	@make setup
+	@ocamlc -c secd_compiler.ml
 	@ocamlc -c secd.ml
-	@ocamlc -o secd bigint.cmo exptree.cmo parser.cmo lexer.cmo secd.cmo 
+	@ocamlc -o secd bigint.cmo exptree.cmo secd_compiler.cmo parser.cmo lexer.cmo secd.cmo 
 krivine:
 	@make setup
+	@ocamlc -c krivine_compiler.ml
 	@ocamlc -c krivine.ml
-	@ocamlc -o krivine bigint.cmo exptree.cmo parser.cmo lexer.cmo krivine.cmo 
+	@ocamlc -o krivine bigint.cmo exptree.cmo krivine_compiler.cmo parser.cmo lexer.cmo krivine.cmo 
 setup:
 	@echo "Compiling"
 	@ocamlc -c bigint.ml

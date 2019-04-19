@@ -25,7 +25,7 @@
 /* Boolean Constants */
 %token  <bool> BOOL
 /* Big Integer constants */
-%token <int> INT
+%token <Bigint.bigint> INT
 /* String ids */
 %token  <string> ID
 
@@ -122,8 +122,8 @@ unary_arithmetic:
 
 /* Projections */
 projections:
-    PROJ LP INT COMMA INT RP projections      {Project(($3, $5), $7)}
-    | conditional LS INT SLASH INT RS         {Project(($3, $5), $1)}
+    PROJ LP INT COMMA INT RP projections      {Project((mk_int $3, mk_int $5), $7)}
+    | conditional LS INT SLASH INT RS         {Project((mk_int $3, mk_int $5), $1)}
     | conditional                             { $1 }
 
 /* Conditional */
