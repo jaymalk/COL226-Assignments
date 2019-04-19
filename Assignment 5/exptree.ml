@@ -168,7 +168,7 @@ type opcode = VAR of string | N of int | B of bool | ABS | UNARYMINUS | NOT
   | PAREN | COND of (opcode list * opcode list) | TUPLE of int | PROJ of int*int 
   | LET of (opcode list) * (opcode list) 
   | CLOS of string * (opcode list) | RCLOS of string * string * (opcode list) | APP | RET | SET | DEFRET
-  | DEF of string | SEQCOMPOSE of (opcode list) | PARCOMPOSE of (opcode list) | LOCALDEF of (opcode)*(opcode) | WHILE of (opcode list)*(opcode)
+  | DEF of string | SEQCOMPOSE of (opcode list) | PARCOMPOSE of (opcode list) | LOCALDEF of (opcode)*(opcode) | WHILE of (opcode list)*(opcode list)
   | EXIT | WATCH | NULL
 
 (* OPCODE CONVERTER FOR SECD *)
@@ -224,11 +224,10 @@ let rec compile (ex : exptree) : opcode list = match ex with
 and def_compile (df : definition) : opcode list = match df with
     | SimpleType(st, ex) -> ((compile ex) @ [DEF(st)])
     | Sequence(dl) -> (match dl with [] -> [] | d :: ds -> (def_compile d)@(def_compile (Sequence(ds))))
+    | While(e, d) -> [WHILE(compile e, def_compile d)]
     | _ -> print_string("Definition not implemented"); raise Not_implemented    
     (* | Parallel(dl) -> PARCOMPOSE(List.map def_compile dl) *)
-    (* | Local(d1, d2) -> LOCALDEF(def_compile d1, def_compile d2) *)
-    (* While Loop *)
-    (* | While(e, d) -> WHILE(compile e, def_compile d) *)
+    (* | Local(d1, d2) -> LOCALDEF(def_compile d1, def_compile d2) *)  
 
 (* ------------------------------------------------------------------------ *)
 (* ANSWER, GAMMA and CLOSURE TYPES | FOR SECD MACHINE and KRIVINE MACHINE *)
@@ -308,7 +307,8 @@ in secd (take_out_and_put_back [] stack m m) env code' dump)
 | (vcl::stack', DEF(st)::code') -> secd stack' ((st, vcl)::env) code' (dump)
 (* Sequential and Parallel (NOT SET) *)
 (* Local (NOT SET) *)
-(* While loop ? (NOT SET) *)
+(* While loop *)
+| (stack', WHILE(ce, cd)::code') -> secd stack' env (ce@[COND(cd@[WHILE(ce, cd)], [NULL])]@code') (dump)
 | _ -> print_string("Problem : Not Implemented\n"); raise Not_implemented
 
 

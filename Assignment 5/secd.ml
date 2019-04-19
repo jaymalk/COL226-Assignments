@@ -14,9 +14,9 @@ let rec answer_string ans = match ans with
 | Tup (n, al) ->
   (let rec tuple_ans alist str = match alist with
     | [] -> "()"
-    | x :: [] -> answer_string(x)^")"
+    | x :: [] -> str^answer_string(x)^")"
     | x :: xs -> tuple_ans xs (str^answer_string(x)^", ")
-   in tuple_ans al "(")
+   in tuple_ans al "Tuple : (")
 ;;
 
 
@@ -26,8 +26,17 @@ let rec closure_string (cl : closure) = match cl with
 | RFunCL (nm, st, oc, gm) -> "Recursive Function with Var("^st^")"
 | _ -> raise Improper_Closure;;
 
+let rec process (env : gamma) = 
+  let rec remove_extras (x) (e') = match e' with
+  [] -> e'
+  | cl :: cls -> if (fst cl = x) then (remove_extras x cls) else cl::(remove_extras x cls)
+  in match env with
+| [] -> env
+| x :: xs -> x::process(remove_extras (fst x) env)
+;;
+
 let work_out ( (stk, env) : Exptree.closure list * Exptree.gamma) = 
-  environment := env;
+  environment := process(env);
   print_string("\027[1;31mStack Contents\n"); flush stdout;
   let rec work_stack stack = 
     (match stack with [] -> () | cl :: cls -> print_string(closure_string(cl)^"\n"); work_stack cls)
@@ -35,7 +44,7 @@ let work_out ( (stk, env) : Exptree.closure list * Exptree.gamma) =
   print_string("\027[1;32mEnvironment Contents\n"); flush stdout;
   let rec work_env e =
     (match e with [] -> () | (st, cl)::gms -> print_string(st^" : "^closure_string(cl)^"\n"); work_env gms)
-  in work_env env;
+  in work_env (!environment);
   print_string("\027[0m")
 ;;
 
@@ -67,7 +76,7 @@ let interpreter () =
           Printf.printf "... "; flush stdout;
           compiled_list := ((!compiled_list)@(compile (Parser.exp_parser Lexer.read (lexbuf)))); (Lexing.new_line lexbuf);
       with
-      | Lexer.Compiler_Start -> work_out(secd [] (!environment) (!compiled_list) []); (compiled_list := []);
+      | Lexer.Compiler_Start -> work_out(secd [] (!environment) (!compiled_list) []); (compiled_list := []); Lexing.flush_input lexbuf;
       | (Read_Definition) -> (compiled_list := ((!compiled_list) @ def_compile (Parser.def_parser Lexer.read (lexbuf)))); (Lexing.new_line lexbuf);
       | _ as e -> raise e
     with
