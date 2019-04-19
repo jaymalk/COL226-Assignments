@@ -377,11 +377,11 @@ let rec krivine (stack : closure list) (env : gamma) (pc : precode list) = match
     | EXT :: pc' -> exit 0
     | NULL :: pc' -> (krivine stack env pc')
   (* Process Complete *)
-    | [] -> (List.hd stack)
-    | RETK::pc'  -> (List.hd stack)
+    | [] -> (List.hd stack, env)
+    | RETK::pc'  -> (List.hd stack, env)
   (* Basic types *)
     | INT(x) :: pc' -> krivine ((VCL(Num x, env))::stack) env pc'
-    | VR(x) :: pc' -> (match get(x, env) with CL(pc, env') -> (let x' = krivine [] env' pc in krivine (x'::stack) env pc')| _ as x -> krivine (x::stack) env pc')
+    | VR(x) :: pc' -> (match get(x, env) with CL(pc, env') -> (let x' = fst (krivine [] env' pc) in krivine (x'::stack) env pc')| _ as x -> krivine (x::stack) env pc')
     | BOOL(b) :: pc' -> krivine (VCL(Bool b, env)::stack) env pc'
   (* Unary operations : Integers *)
     (* Absolute value *)
@@ -486,17 +486,17 @@ let rec krivine (stack : closure list) (env : gamma) (pc : precode list) = match
             | VCL(Bool false, e'):: stack' -> krivine stack' env (e3@pc')
             | _ -> raise BadStack)
   (* Let condition *)
-    | LETK(d, c) :: pc' -> (let x = krivine stack env ([d]@c) in krivine (x::stack) env pc')
+    | LETK(d, c) :: pc' -> (let x = fst (krivine stack env ([d]@c)) in krivine (x::stack) env pc')
   (* Function Abstraction *)
     | LAM(st, e1) :: pc' -> (krivine (FCL(st, e1, env)::stack) env  pc')
   (* Recursive Function Abstraction *)
     | RLAM(nm, st, e1) :: pc' -> (krivine (RFCL(nm, st, e1, env)::stack) ((nm, RFCL(nm, st, e1, env))::env) pc')
   (* Function Call *)
     | APP(e) :: pc' -> (match stack with 
-                        | FCL(st, ex, env')::stack' -> krivine stack' ((st, CL(e, env))::env') (ex@pc') 
-                        | RFCL(nm, st, ex, env')::stack' -> krivine stack' ((nm, RFCL(nm, st, ex, env'))::(st, CL(e, env))::env') (ex@pc') 
+                        | FCL(st, ex, env')::stack' -> let x = krivine stack' ((st, CL(e, env))::env') (ex) in krivine (fst(x)::stack') env pc'
+                        | RFCL(nm, st, ex, env')::stack' -> let x = krivine stack' ((nm, RFCL(nm, st, ex, env'))::(st, CL(e, env))::env') ex in krivine (fst(x)::stack') env pc'
                         | _ -> raise BadStack)
   (* DEFINTIONS *)
     | DF(st, c) :: pc' -> (krivine stack ((st, CL(c, env))::env) pc')
   (* Not Implemented *)
-    | _ -> raise Not_implemented
+    (* | _ -> raise Not_implemented *)

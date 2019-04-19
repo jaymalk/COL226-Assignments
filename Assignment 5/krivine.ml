@@ -6,6 +6,7 @@ open Parser
 exception Improper_Closure;;
 
 let compiled_list : precode list ref = ref [];;
+let environment : gamma ref = ref [];;
 
 let rec answer_string ans = match ans with
 | Num i -> "Integer : "^string_of_int(i)
@@ -25,6 +26,19 @@ let rec closure_string (cl : closure) = match cl with
 | FCL (st, pc, gm) -> "Function with Var("^st^")"
 | _ -> raise Improper_Closure;;
 
+let rec process (env : gamma) = 
+  let rec remove_extras (x) (e') = match e' with
+  [] -> e'
+  | cl :: cls -> if (fst cl = x) then (remove_extras x cls) else cl::(remove_extras x cls)
+  in match env with
+| [] -> env
+| x :: xs -> x::process(remove_extras (fst x) env)
+;;
+
+let rec work (cls, env) =
+  environment := process(env);
+  print_string("\027[1;31mAnswer : "^closure_string(cls)^"\n\027[0m")
+;;
 
 let _ =
   Printf.printf "Enter Program ($ to execute)\n"; flush stdout;
@@ -32,10 +46,12 @@ let _ =
   while true do
     try
       try
-        Printf.printf "\027[0m... "; flush stdout;
+        Printf.printf "... "; flush stdout;
         compiled_list := ((!compiled_list)@(krivine_compile (Parser.exp_parser Lexer.read (lexbuf)))); (Lexing.new_line lexbuf);
       with
-      | Lexer.Compiler_Start -> print_string("\027[1;31m"); print_string(closure_string(krivine [] [] (!compiled_list))^"\n");  (compiled_list := []);
+      | Lexer.Compiler_Start -> work(krivine [] (!environment) (!compiled_list));  (compiled_list := []); print_string("\027[0m")
+      | (Read_Definition) -> (compiled_list := ((!compiled_list) @ [krivine_def_compile (Parser.def_parser Lexer.read (lexbuf))] )); (Lexing.new_line lexbuf);
+      | _ as e -> raise e
     with
     | Exptree.Not_Found(s) -> print_string("Variable "^s^" not in table (at time of abstraction).\n"); (compiled_list := []);
     | (Lexer.Bad_Char s) -> print_string("Illegal Character : "); print_char(s); print_string("\n"); Lexing.flush_input lexbuf;
