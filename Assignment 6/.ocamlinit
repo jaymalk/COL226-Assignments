@@ -1,0 +1,10 @@
+#load "procedure.cmo";;
+#load "lexer.cmo";;
+#load "parser.cmo";;
+
+open Procedure ;;
+open Parser ;;
+open Lexer ;;
+
+let prog s = Parser.program_parser   Lexer.read (Lexing.from_string s) ;;
+let proc s = Parser.procedure_parser Lexer.read (Lexing.from_string s) ;;
