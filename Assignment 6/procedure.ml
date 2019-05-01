@@ -19,6 +19,10 @@ let get_children (p : procedure) = match p with
   | Procedure(_, _, _, pl) -> pl
 ;;
 
+let get_immediate_child (p : procedure) = 
+  List.map get_name (get_children p)
+;;
+
 let rec get_decendents (p : procedure) =
   (get_name p) :: (List.flatten (List.map get_decendents (get_children p)))
 ;;
