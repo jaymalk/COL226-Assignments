@@ -8,3 +8,60 @@ open Lexer ;;
 
 let prog s = Parser.program_parser   Lexer.read (Lexing.from_string s) ;;
 let proc s = Parser.procedure_parser Lexer.read (Lexing.from_string s) ;;
+
+let s = prog "program main;
+
+  var a: Tint, b: Tint, c: Tint;
+
+  procedure P(x: Tint, y: Tint);
+
+        var z: Tint, a: Tint;
+
+        procedure R(w: Tint, i: Tint);
+
+                var j: Tint, b: Tint;
+
+                procedure V(m: Tint, n: Tint);
+
+                        var c: Tint;
+
+                        { body of V elided }
+
+                { body of R elided }
+
+        procedure S(c: Tint, k: Tint);
+
+                var m: Tint, n: Tint;
+
+                { body of S elided }
+
+        { body of P elided }
+
+  procedure Q(z: Tint, w: Tint);
+
+        var x: Tint, b: Tint;
+
+        procedure T(a: Tint, y: Tint);
+
+                var i: Tint, f: Tint;
+
+                procedure W(m: Tint, p: Tint);
+
+                       var j: Tint, h: Tint;
+
+                       { body of W elided }
+
+                { body of T elided }
+
+        procedure U(c: Tint, z: Tint);
+
+                var p: Tint, g: Tint;
+
+                { body of U elided }
+
+        { body of Q elided }
+
+  { body of main elided }
+";;
+
+let s' = tree s;;
