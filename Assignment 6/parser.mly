@@ -40,6 +40,7 @@ dynamic_parser:
     | SMALL COLON EQ input SEMICOLON            { Set($1, $4) }
     | RETURN SEMICOLON                          { Return }
     | TRACE SEMICOLON                           { Stack_Trace }
+    | CALL SEMICOLON                            { Valid_Procedures }
 
 input_list:
     | input                                     { [$1] }

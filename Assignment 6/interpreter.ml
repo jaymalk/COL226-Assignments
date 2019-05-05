@@ -53,11 +53,11 @@ let rec get_parent_index (p : string) = let y = (get_parent_name p) in
 let get_ancestor_list (p : string) =
   let rec get_list (pn : string) (pl : string list) = 
     if (List.mem "Main" pl) then pl 
-    else let pq = get_parent_name pn in get_list (pq) (pn::pl)
+    else let pq = get_parent_name pn in get_list (pq) (pq::pl)
   in get_list p [p]
 ;;
 
-(* VARIABLE ACCESS MECHANISM *)
+(* VARIABLE ACCESS AND EDIT MECHANISM *)
 (* =================================== *)
 (* Checking if varaible is in the present list *)
 let rec in_list (ol : opcode list) (v : string) = match ol with
@@ -79,13 +79,12 @@ let reset_list (ol : opcode list) (v : string) (f : int) (nv : int) (b : bool) =
   in let new_pos = if b then LOCAL(list_set ol [] v nv) else PASSED(list_set ol [] v nv)
       in s := (List.mapi (fun i x -> if i = f then new_pos else x) !s)
 ;;
-
 (* Finding the char in the stack *)
 let rec find_char (v : string) (f : int)  = 
   if f <= 0 then raise (Variable_Error "Variable not found/accessible\n") else
   match (List.nth !s f) with
 | LOCAL(ol) ->  if in_list ol v then find_in_list ol v else find_char v (f-3)
-| PASSED(ol) -> if in_list ol v then find_in_list ol v else let x = (fun (STATIC(z)) -> z) (List.nth !s (f+2)) 
+| PASSED(ol) -> if in_list ol v then find_in_list ol v else let x = (fun [@warning "-8"] (STATIC(z)) -> z) (List.nth !s (f+2)) 
                                   in if x = 1 then raise (Variable_Error "Variable not found/accessible")
                                     else find_char v (x+2)
 | _ -> raise (Bad_State "[find_char] Invalid access point. (Match-case)\n")
@@ -95,7 +94,7 @@ let rec find_and_reset_char (v : string) (f : int) (nv : int) =
   if f <= 0 then raise (Variable_Error "Variable not found/accessible\n") else
   match (List.nth !s f) with
 | LOCAL(ol) ->  if in_list ol v then reset_list ol v f nv true else find_and_reset_char v (f-3) nv
-| PASSED(ol) -> if in_list ol v then reset_list ol v f nv false else let x = (fun (STATIC(z)) -> z) (List.nth !s (f+2)) 
+| PASSED(ol) -> if in_list ol v then reset_list ol v f nv false else let x = (fun [@warning "-8"] (STATIC(z)) -> z) (List.nth !s (f+2)) 
                                   in if x = 1 then raise (Variable_Error "Variable not found/accessible")
                                     else find_and_reset_char v (x+2) nv
 | _ -> raise (Bad_State "[find_char] Invalid access point. (Match-case)\n")
@@ -131,7 +130,7 @@ let rec process_set (start : int) (f : frame) (v : intype list) = match f with
 let rec is_valid (st : string) = 
   if st = "Main" then true else
   let x = (List.nth !s !fp)
-    in List.mem (get_parent_name st) (get_ancestor_list ((fun (START(st, _)) -> st) x))
+    in List.mem (get_parent_name st) (get_ancestor_list ((fun  [@warning "-8"] (START(st, _)) -> st) x))
 ;;
 (* Calling a procedure on interpreter *)
 let rec call (cl : call) = match cl with
@@ -159,11 +158,16 @@ and print_list ol = match ol with
 | [] -> print_string("\n")
 | o :: ol' -> print_opcode o ; print_list ol'
  ;;
-(* Priting stack contents *)
+(* Printing stack contents *)
 let rec print_stack_contents (s : stack) = match s with
   [] -> print_string("\n\027[0m")
   | START(_, _) :: s' -> print_opcode(List.hd s); print_string("\027[1;32m========================\n\027[0m"); print_stack_contents(s')
   | head :: s' -> print_opcode(head); print_stack_contents(s')
+;;
+(* Printing a string list *)
+let rec print_string_list sl = match sl with
+  [] -> print_string("\n\027[0m")
+  | s :: sl' -> print_string("\027[1;33m "^s); print_string_list(sl')
 ;;
 
 (* INTERPRETER *)
@@ -187,6 +191,15 @@ let _ =
       | Stack_Trace -> (* Printing stack trace *)
                 print_string("\n\027[1;32m========================\n\027[0m");print_stack_contents(List.rev !s)
       | Return -> if !fp = 0 then print_string("Already at main!\n") else (fp := !fp-4; s := (return !s))
+      | Valid_Procedures -> if !fp = (-4) then print_string("No call made yet!\n") else let al = (get_ancestor_list ((fun  [@warning "-8"] (START(st, _)) -> st) (List.nth !s !fp))) in 
+                      (let rec try_all (fs) (al) = match fs with
+                      [] -> (List.tl (List.rev al));
+                      | f :: ff -> let s = (fst f) in if (List.mem s al) 
+                              then try_all ff al 
+                              else let s' = (get_parent_name s) in if (List.mem s' al) 
+                                     then (try_all ff (s::al)) 
+                                     else try_all ff al in let x = try_all !frames (List.rev al) in
+                      print_string_list(x))
       );
     with
       | Parsing.Parse_error -> print_string("Parsing Error. Please Enter Again!\n"); Lexing.new_line lexbuf;
