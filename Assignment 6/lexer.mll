@@ -13,6 +13,8 @@
 let caps = ['A'-'Z']+
 let small = ['a'-'z']+
 
+let integer = ['0'-'9']+
+
 let body = [' ' '\t' '\n' 'A'-'Z' 'a'-'z']*
 
 let sp = [' ' '\t' '\n']+
@@ -26,10 +28,12 @@ rule read = parse
 
 |   ('{')(body)('}')    { BODY      (* Body of a procedure *)}
 
-|   "program"           { PROGRAM         (* Program Key Word *)}
+|   "program"           { PROCEDURE       (* Program Key Word *)}
 |   "procedure"         { PROCEDURE       (* Procedure Key Word *)}
-|   "main"              { MAIN            (* Main Key Word *)}
 |   "var"               { VAR             (* Var Key Word *)}
+|   "call"              { CALL            (* Calling keyword *)}
+
+|   integer as n        { INT(int_of_string n) }
 
 |   ':'                 { COLON }
 |   ';'                 { SEMICOLON }
@@ -40,7 +44,6 @@ rule read = parse
 
 (* Capturing Types *)
 |   "Tint"              {TYPE(Tint)}
-|   "Tbool"             {TYPE(Tbool)}
 
 |   small as s          { SMALL(s) (* Small case characters *)}
 |   caps  as c          { CAPS(c)  (* Capital case characters *)}

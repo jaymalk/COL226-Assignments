@@ -1,64 +1,94 @@
-exception Bad_State
+exception Not_Implemented of string
+exception Error of string
+exception Variable_Count_Mismatch
+exception Bad_State of string
 exception Procedure_Not_Found of string
 
-type types = Tint | Tbool
+type types = Tint
 
 type variable = Var of string * types
 
 type procedure = Procedure of string * variable list * variable list * procedure list;;
 
-type program = Main of variable list * procedure list;;
+type gamma = (string * int) list;;
 
-type structure = N of string * structure list | MAIN of structure list
+type call = Call of string * intype list 
+and intype = N of int | V of string;;
 
-let get_name (p : procedure) = match p with
-  | Procedure(st, _, _, _) -> st
+type opcode =
+   (* Stack opcodes *)
+  STATIC of int | LOCAL of opcode list | PASSED of opcode list | START of string * int | RET of int
+   (* String opcode *)
+  | MAP of string * int
+  and
+frame = opcode list;;
+
+(* Hardcoded frames linked to their names *)
+type frame_sets = (string * frame) list;;
+
+type stack = opcode list;;
+
+(* GLOBAL VARIABLES *)
+let (program : procedure ref) = ref (Procedure("Empty", [], [], []));;
+let (s : stack ref) = ref [];;
+let (fp : int ref) = ref 0;;
+let (frames : frame_sets ref) =ref [];;
+
+(* Compiling varialbles *)
+let compile oc = match oc with
+| Var(st, _) -> MAP(st, 0)
 ;;
 
-let get_children (p : procedure) = match p with
-  | Procedure(_, _, _, pl) -> pl
+(* Creating hardcoded frames from the given code body *)
+let rec hardcode_frames (fs : frame_sets) (p : procedure) : frame_sets = match p with
+  | Procedure("Main", passed_vl, local_vl, pl) -> let y = ("Main", (START ("Main", 0) :: STATIC (0) :: (LOCAL (List.map compile local_vl)) :: [])) in map_to_list (y::fs) pl
+  | Procedure(st, passed_vl, local_vl, pl) -> let y = (st, (PASSED (List.map compile passed_vl)) :: START (st, 0) :: STATIC (0) :: (LOCAL (List.map compile local_vl)) :: []) in map_to_list (y::fs) pl
+and map_to_list fs pl = match pl with
+    [] -> fs
+    | p :: ps -> map_to_list (hardcode_frames fs p) ps 
 ;;
 
-let get_immediate_child (p : procedure) = 
-  List.map get_name (get_children p)
+(* Assigning variables their values *)
+let rec assign (v : intype list) (pl : opcode list) (new_list : opcode list)= match (v, pl) with
+([], []) -> List.rev new_list
+| (N(n)::vs, MAP(st, _)::ps) -> assign vs ps (MAP(st, n)::new_list)
+| (V(x)::vs, MAP(st, _)::ps) -> raise (Not_Implemented "Varaible Fetch Not Implemented")
+| _ -> raise Variable_Count_Mismatch
 ;;
 
-let rec get_decendents (p : procedure) =
-  (get_name p) :: (List.flatten (List.map get_decendents (get_children p)))
+(* Finding the parent name, given the name of the procedure and complete map *)
+let rec contains p proc = match proc with
+  | Procedure(st, _, _, pl) -> if st = p then true else (List.fold_left (fun x y -> x || y) false (List.map (contains p) pl))
+  ;;
+
+let get_parent_name p =
+  let rec parent p prnt curr = match curr with
+  | Procedure(st, _, _, pl) -> if st = p then (fun (Procedure(st, _, _, _)) -> st) prnt else
+    let rec apply_on_list p curr pl = (match pl with
+    [] -> raise (Error "[get_parent_name] : Procedure not found.")
+    | pp :: ps -> if (contains p pp) then (parent p curr pp) else apply_on_list p curr ps)
+    in apply_on_list p curr pl 
+  in parent p !program !program
+;;
+    
+
+(* Finding the parent index *)
+let rec get_parent_index (p : string) = let y = (get_parent_name p) in 
+  match (List.find (fun x -> (match x with START(z, _)-> z=y | _-> false)) (List.rev !s)) with
+  START(y, indx) -> indx
+  | _ -> raise (Bad_State "[get_parent_index]")
 ;;
 
-let all_procedure (p : program) = match p with
-  | Main(_, pl) -> (List.flatten (List.map get_decendents pl))
+
+(* Setting the set according to an external call *)
+let rec process_set (start : int) (f : frame) (v : intype list) = match f with
+| PASSED(pl) :: START(name, 0) :: STATIC(0) :: ls -> PASSED(assign v pl []) :: START(name, start+1) :: STATIC(get_parent_index name) :: ls
+| START("Main", 0) :: STATIC(0) :: ls  -> if not (start = 0) then raise (Error "Main can only be called in the start.") else START("Main", 0) :: STATIC(1) ::  ls
+| _ -> raise (Bad_State "[process_set] : No other possibility of frame.")
 ;;
 
-let rec get_structure (p : procedure) =
-  N(get_name p, List.map get_structure (get_children p) )
-;;
 
-let tree (p : program) = match p with
-  | Main(_, pl) -> MAIN(List.map get_structure pl)
-;;
-
-let rec contains_procedure (nm : string) (tr : structure) = match tr with
-  | MAIN (sl) -> List.fold_left (fun x y -> x || y) false (List.map (contains_procedure nm) sl)
-  | N(n, []) -> n = nm
-  | N(n, sl) -> if n = nm then true else List.fold_left (fun x y -> x || y) false (List.map (contains_procedure nm) sl)
-;;
-
-let rec find_procedure_list (nm : string) (tl : structure list) = match tl with
-  | [] -> raise (Procedure_Not_Found nm)
-  | t :: ts -> if contains_procedure nm t then t else find_procedure_list nm ts
-;;
-
-let rec get_all_ancestors (nm : string) (tr : structure) (al : string list) =
-  try
-    match tr with
-    | MAIN (sl) -> (match (find_procedure_list nm sl) with
-          N(n, sl') -> get_all_ancestors nm (N(n, sl')) (n::al)
-        | _ -> raise Bad_State)
-    | N(n, sl) -> (match (find_procedure_list nm sl) with
-          N(n, sl') -> get_all_ancestors nm (N(n, sl')) (n::al)
-        | _ -> raise Bad_State)
-  with
-  | Procedure_Not_Found nm -> al
+(* Calling a procedure on interpreter *)
+let rec call (cl : call) = match cl with
+  | Call(st, var_list) -> let x = List.length !s in process_set x (List.assoc st !frames) var_list
 ;;
