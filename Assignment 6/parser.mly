@@ -6,7 +6,7 @@
 /* Left and right parenthesis */
 %token  /* Simple */ LP RP
 /* Semicolon and colon */
-%token  SEMICOLON COMMA COLON
+%token  SEMICOLON COMMA COLON EQ
 /* String ids, lower and capital case */
 %token  <string> SMALL
 %token  <string> CAPS
@@ -16,7 +16,7 @@
 /* Token for capturing variable type */
 %token  <Procedure.types> TYPE
 /* Keywords */
-%token PROCEDURE, VAR, MAIN
+%token PROCEDURE, VAR, MAIN, TRACE
 /* Calling mechanism */
 %token CALL
 /* --------- */
@@ -36,6 +36,9 @@
 dynamic_parser:
     | CALL MAIN SEMICOLON                       { Call("Main", []) }
     | CALL CAPS LP input_list RP SEMICOLON      { Call($2, $4) }
+    | VAR SMALL SEMICOLON                       { Access($2) }
+    | SMALL COLON EQ input SEMICOLON            { Set($1, $4) }
+    | TRACE SEMICOLON                           { Stack_Trace }
 
 input_list:
     | input                                     { [$1] }

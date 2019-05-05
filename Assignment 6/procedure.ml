@@ -11,7 +11,7 @@ type procedure = Procedure of string * variable list * variable list * procedure
 
 type gamma = (string * int) list;;
 
-type call = Call of string * intype list 
+type call = Call of string * intype list | Access of string | Stack_Trace | Set of string * intype
 and intype = N of int | V of string;;
 
 type opcode =

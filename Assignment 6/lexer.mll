@@ -34,18 +34,20 @@ rule read = parse
 |   "call"              { CALL            (* Calling keyword *)}
 |   "exit"              { exit(0) }
 |   "Main"              { MAIN }
+|   "trace"             { TRACE }
 
 |   integer as n        { INT(int_of_string n) }
 
 |   ':'                 { COLON }
 |   ';'                 { SEMICOLON }
 |   ','                 { COMMA }
+|   '='                 { EQ }
 
 |   '?'                 { WATCH (* For viewing table contents *)}
 |   "exit"              { EXIT (* Exiting the interpreter *)}
 
 (* Capturing Types *)
-|   "Tint"              {TYPE(Tint)}
+|   "Tint"              { TYPE(Tint) }
 
 |   small as s          { SMALL(s) (* Small case characters *)}
 |   caps  as c          { CAPS(c)  (* Capital case characters *)}
