@@ -106,7 +106,7 @@ let access x = find_char x (!fp+2)
 (* Reset Value *)
 let reset x nv = match nv with
   N(n) -> find_and_reset_char x (!fp+2) n; n
-| V(x) -> find_and_reset_char x (!fp+2) (access(x)); access(x)
+| V(xx) -> let n = (access(xx)) in find_and_reset_char x (!fp+2) n; n
 ;;
 
 (* SETTING MECHANISM *)
@@ -138,6 +138,13 @@ let rec call (cl : call) = match cl with
   | Call(st, var_list) -> let x = List.length !s in process_set x (List.assoc st !frames) var_list
   | _ -> raise (Bad_State "[call] Invalid Call.")
 ;;
+(* Removing stack contents after return *)
+let return stack =
+  let rec cutout stack_built stack_left left = match left with 
+  4 -> (List.rev stack_built)
+| _ -> cutout ((List.hd stack_left)::stack_built) (List.tl stack_left) (left-1)
+  in cutout [] stack (List.length stack)
+;;
 
 (* PRINTING FORMAT *)
 (* =================================== *)
@@ -152,7 +159,6 @@ and print_list ol = match ol with
 | [] -> print_string("\n")
 | o :: ol' -> print_opcode o ; print_list ol'
  ;;
-
 (* Priting stack contents *)
 let rec print_stack_contents (s : stack) = match s with
   [] -> print_string("\n\027[0m")
@@ -179,7 +185,8 @@ let _ =
       | Access (st) -> (try let x = access(st) in print_string("\027[1;33mVariable "^st^": "^string_of_int(x)^"\n\027[0m") with (Variable_Error s) -> print_string(s)) 
       | Set (st, nv) -> (try let x = reset st nv in print_string("\027[1;33mVariable Set "^st^": "^string_of_int(x)^"\n\027[0m") with (Variable_Error s) -> print_string(s)) 
       | Stack_Trace -> (* Printing stack trace *)
-                print_string("\n\027[1;32m========================\n\027[0m");print_stack_contents(List.rev !s);
+                print_string("\n\027[1;32m========================\n\027[0m");print_stack_contents(List.rev !s)
+      | Return -> if !fp = 0 then print_string("Already at main!\n") else (fp := !fp-4; s := (return !s))
       );
     with
       | Parsing.Parse_error -> print_string("Parsing Error. Please Enter Again!\n"); Lexing.new_line lexbuf;

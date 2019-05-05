@@ -35,6 +35,7 @@ rule read = parse
 |   "exit"              { exit(0) }
 |   "Main"              { MAIN }
 |   "trace"             { TRACE }
+|   "return"            { RETURN }
 
 |   integer as n        { INT(int_of_string n) }
 
