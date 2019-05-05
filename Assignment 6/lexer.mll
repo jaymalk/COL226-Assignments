@@ -32,6 +32,8 @@ rule read = parse
 |   "procedure"         { PROCEDURE       (* Procedure Key Word *)}
 |   "var"               { VAR             (* Var Key Word *)}
 |   "call"              { CALL            (* Calling keyword *)}
+|   "exit"              { exit(0) }
+|   "Main"              { MAIN }
 
 |   integer as n        { INT(int_of_string n) }
 

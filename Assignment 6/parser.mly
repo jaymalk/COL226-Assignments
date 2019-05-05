@@ -16,7 +16,7 @@
 /* Token for capturing variable type */
 %token  <Procedure.types> TYPE
 /* Keywords */
-%token PROCEDURE, VAR
+%token PROCEDURE, VAR, MAIN
 /* Calling mechanism */
 %token CALL
 /* --------- */
@@ -34,7 +34,8 @@
 %%
 
 dynamic_parser:
-    | CALL CAPS LP input_list RP                { Call($2, $4)}
+    | CALL MAIN SEMICOLON                       { Call("Main", []) }
+    | CALL CAPS LP input_list RP SEMICOLON      { Call($2, $4) }
 
 input_list:
     | input                                     { [$1] }
