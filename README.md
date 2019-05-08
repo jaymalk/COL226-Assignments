@@ -20,3 +20,15 @@ Assignments completed while pursuing the course programming languages.
     [More](./Assignment%203/README.md)
     - Design a grammar for a simple expression language, taking care to enforce precedence rules (e.g., BODMAS).
     - Generate an abstract syntax tree from the parsed data. Then, use it for further evaluation.
+3. _Implement a type checker for our evaluator_ <br>
+    [More](./Assignment%204/README.md)
+    - Extend our language to support types. Set operational limits wiht respect to types.
+    - Set up a type checker at compile time which checks for correctness of types of variables associates with operations.
+3. _Creating implementation machines for evaluator (thus completing the language)_ <br>
+    [More](./Assignment%205/README.md)
+    - Implement **SECD** and **Krivine** machines for compiling and evaluating programs with *Call by value* or *Call by name* mechanism.
+    - Add new constructs such as *recursion, while-loops* e.t.c.
+3. _Implementations of the (static/lexical) scoping discipline in Algol-like languages_ <br>
+    [More](./Assignment%206/README.md)
+    - Design the procedure-call implementation as in PASCAL on a stack.
+    - Implement static and dynamic links with display registers for associated access and call.
