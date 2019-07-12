@@ -1,4 +1,9 @@
 
+
+(* BigInteger package for Ocaml... *)
+(* Rajbir Malik (Github : jaymalk) *)
+
+
 (* ======================================== *)
 (* Declaring the types *)
 type sign = Neg | NonNeg ;;
@@ -67,18 +72,19 @@ let rec remove_zeros (l1 : int list) =  match l1 with
 
 (* Simple addition of two int lists *)
 (* Gives wrong answer when adding a number with a negative number of bigger magnitude *)
-let simple_add (l1 : int list) (l2 : int list) =
-  let rec add_till_end l1 l2 la = match (l1, l2) with
-      ([], []) -> remove_zeros(propogate_carry(la))
-    |(x::xs, []) -> add_till_end xs [] (x::la)
-    |([], y::ys) -> add_till_end [] ys (y::la)
-    |(x::xs, y::ys) -> add_till_end xs ys ((x+y)::la)
-  in add_till_end (List.rev l1) (List.rev l2) [];;
+let simple_add l1 l2 = 
+    let rec inner_add l1 l2 lsum carry = match (l1, l2) with
+        ([], []) -> if carry = 0 then lsum else 1::lsum
+        | (x::xs, []) -> if carry = 0 then ((List.rev l1)@lsum) else (let (v, r) = ((x+1)/10, (x+1) mod 10) in inner_add xs [] (r::lsum) v)
+        | ([], x::xs) -> inner_add l2 l1 lsum carry
+        | (x::xs, y::ys) -> (let (v, r) = ((x+y+carry)/10, (x+y+carry)mod 10) in inner_add xs ys (r::lsum) v)
+    in inner_add (List.rev l1) (List.rev l2) [] 0
+    ;;
 
 (* Simple subtraction which subtracts and gives a bigint *)
 let simple_subtract (l1 : int list) (l2 : int list) : bigint = match (larger_list l1 l2 || l1=l2) with
-    true -> (NonNeg, simple_add l1 (minus_list l2))
-  | false ->(Neg, simple_add l2 (minus_list l1));;
+    true -> (NonNeg, remove_zeros(propogate_carry(simple_add l1 (minus_list l2))))
+  | false ->(Neg, remove_zeros(propogate_carry(simple_add l2 (minus_list l1))));;
 
 (* ADDITION *)
 let add (a : bigint) (b : bigint) = match (fst a, fst b) with
@@ -98,8 +104,11 @@ let sub (a: bigint) (b: bigint) = add (a) (minus b);;
 (* Helper functions for multiplication and division *)
 
 (* Scalar multiplication of each member by a constant *)
-let scalar_mult_list (l1 : int list) (c : int) =
-  List.map  (function x -> c*x) l1;;
+let scalar_mult_list l1 c = match c with
+    |0 -> []
+    |1 -> l1
+    | _ -> propogate_carry(List.map (fun x -> c * x) l1);;
+
 
 (* Left shift of an int list by appending a list of zeros, of appropriate size *)
 let left_shift (l1 : int list) (shift : int) =
@@ -125,10 +134,12 @@ let right_shift  (l1 : int list) (shift : int) =
 let fast_div_rem (l1 : int list) (l2 : int list) =
   if l2 = []  then raise Division_by_zero else
     let rec div_by_shift l1 l2 ld ladd =
-      match (ladd, (larger_list l1 l2) || l1=l2) with
+    (
+        match (ladd, (larger_list l1 l2) || l1=l2) with
         ([], _) -> (ld, l1)
-      | (_, true) -> div_by_shift (simple_add (l1) (minus_list l2)) l2 (simple_add ld ladd) ladd
+      | (_, true) -> div_by_shift (remove_zeros(propogate_carry(simple_add (l1) (minus_list l2)))) l2 (simple_add ld ladd) ladd
       | (_, false) -> div_by_shift (l1) (right_shift l2 1) (ld) (right_shift ladd 1)
+    )
     in
     let len1 = List.length (l1) and
       len2 = List.length (l2) in
@@ -137,10 +148,13 @@ let fast_div_rem (l1 : int list) (l2 : int list) =
 (* MULTIPLICATION *)
 let mult (a: bigint) (b: bigint) =
   if (snd a = []) || (snd b = []) then (NonNeg, []) else
-    let rec mult_const_add l1 rev_l2 ml lev = match rev_l2 with
-        [] -> ml
-      | x :: xs -> mult_const_add (left_shift l1 1) (xs)  (propogate_carry((simple_add ml (scalar_mult_list l1 x)))) (lev+1)
-    in bigintmake (sp (fst a) (fst b)) (mult_const_add (snd a) (List.rev (snd b)) [] 0);;
+    let rec mult_const_add_cache l1 rev_l2 ml cache lev = match rev_l2 with
+        [] ->  ml
+      | x :: xs -> if (List.mem_assoc x cache) then let xm = (List.assoc x cache) in mult_const_add_cache (l1) (xs) (simple_add ml (left_shift xm lev)) cache (lev+1)
+                    else let xm = (scalar_mult_list l1 x) in mult_const_add_cache (l1) (xs) (simple_add ml (left_shift xm lev)) ((x, xm)::cache) (lev+1)
+    in if (List.length (snd a)) > (List.length (snd b)) then
+    bigintmake (sp (fst a) (fst b)) (mult_const_add_cache (snd a) (List.rev (snd b)) [] [] 0)
+    else bigintmake (sp (fst a) (fst b)) (mult_const_add_cache (snd b) (List.rev (snd a)) [] [] 0);;
 
 (* QUOTIENT *)
 let div (a : bigint) (b : bigint) =
@@ -197,6 +211,7 @@ let lt (a : bigint) (b : bigint) =
 let leq (a : bigint) (b : bigint) =
   (geq b a);;
 
+(* ---------------------------------------- *)
 
 (* ======================================== *)
 (* CONVERTING TO A STRING *)
@@ -235,3 +250,21 @@ let bigint_of_string (a : string) :bigint =
 ;;
 
 (* ---------------------------------------- *)
+(* ------------------END------------------- *)
+(* ---------------------------------------- *)
+
+(* Assignment of operators to values *)
+(* Arithmetic Operations *)
+let ( +| ) (a : bigint) (b : bigint) = (add a b);;
+let ( -| ) (a : bigint) (b : bigint) = (sub a b);;
+let ( *| ) (a : bigint) (b : bigint) = (mult a b);;
+let ( /| ) (a : bigint) (b : bigint) = (div a b);;
+let ( %| ) (a : bigint) (b : bigint) = (rem a b);;
+(* Constructor *)
+let ( =| ) (a : int) = (mk_big a);;
+(* Boolean operations *)
+let ( <| ) (a : bigint) (b : bigint) = (lt a b);;
+let ( >| ) (a : bigint) (b : bigint) = (gt a b);;
+let ( <=| ) (a : bigint) (b : bigint) = (leq a b);;
+let ( >=| ) (a : bigint) (b : bigint) = (geq a b);;
+let ( ==| ) (a : bigint) (b : bigint) = (eq a b);;
